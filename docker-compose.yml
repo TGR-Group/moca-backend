@@ -19,6 +19,8 @@ services:
       - DATABASE_URL=postgres://postgres:postgres@db
     tty: true
     tmpfs: /moca-tmp
+    ports:
+      - "8080:8080"
     command: >
       bash -c "cd /moca &&
       npm install -g pnpm &&
