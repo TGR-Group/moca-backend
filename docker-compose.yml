@@ -16,7 +16,7 @@ services:
       - ./:/moca
       - node-modules-node:/moca/node_modules
     environment:
-      - DATABASE_URL=postgres://postgres:postgres@db
+      - DATABASE_URL=postgres://postgres:postgres@localhost:5432
     tty: true
     tmpfs: /moca-tmp
     ports:
