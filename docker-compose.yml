@@ -9,6 +9,8 @@ services:
       POSTGRES_PASSWORD: postgres
     volumes:
       - pg-data:/var/lib/postgresql/data
+    networks:
+      - db
   node:
     image: node:20
     platform: linux/amd64
@@ -16,7 +18,7 @@ services:
       - ./:/moca
       - node-modules-node:/moca/node_modules
     environment:
-      - DATABASE_URL=postgres://postgres:postgres@localhost:5432
+      - DATABASE_URL=postgres://postgres:postgres@db:5432
     tty: true
     tmpfs: /moca-tmp
     ports:
@@ -28,6 +30,11 @@ services:
       pnpm run start"
     depends_on:
       - db
+    networks:
+      - db
 volumes:
   pg-data:
   node-modules-node:
+networks:
+  db:
+    driver: bridge

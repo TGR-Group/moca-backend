@@ -12,11 +12,13 @@
     "drizzle-zod": "^0.5.1",
     "hono": "^4.2.5",
     "pg": "^8.11.5",
-    "postgres": "^3.4.4"
+    "postgres": "^3.4.4",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
     "@types/node": "^20.11.17",
     "@types/pg": "^8.11.5",
+    "@types/uuid": "^9.0.8",
     "drizzle-kit": "^0.20.16",
     "tsx": "^4.7.1"
   }
