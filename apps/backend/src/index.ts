@@ -6,7 +6,10 @@ import { users } from '../db/schema';
 import { zeroPadding } from '../utils/zeroPadding';
 import { v4 as uuidv4 } from 'uuid';
 import { bearerAuth } from 'hono/bearer-auth';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
+import { zValidator } from '@hono/zod-validator';
+import { z } from 'zod';
+import { extractNumbersFromString } from '../utils/extractNumbersFromString';
 
 const app = new Hono()
 
@@ -33,12 +36,18 @@ app.post('/register', async (c) => {
   }
 })
 
-app.use("/visitor/*", bearerAuth({
-  verifyToken: async (token) => {
-    const user = await db.select().from(users).where(eq(users.token, token))
-    return !!user[0];
-  },
-}))
+app.use("/visitor/*",
+  bearerAuth({
+    verifyToken: async (token, c) => {
+      const { user_id: userId }: { user_id?: string } = await c.req.json();
+      if (!userId || !parseInt(extractNumbersFromString(userId))) {
+        return false;
+      }
+      const user = await db.select().from(users).where(and(eq(users.token, token), eq(users.id, parseInt(extractNumbersFromString(userId)))))
+      return !!user[0];
+    },
+  })
+)
 
 app.post("/visitor/wait", (c) => {
   return c.json({ message: "Waiting for staff to call" })

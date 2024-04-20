@@ -13,6 +13,9 @@ importers:
       '@hono/node-server':
         specifier: ^1.11.0
         version: 1.11.0
+      '@hono/zod-validator':
+        specifier: ^0.2.1
+        version: 0.2.1(hono@4.2.5)(zod@3.22.5)
       drizzle-orm:
         specifier: ^0.30.8
         version: 0.30.8(@types/pg@8.11.5)(pg@8.11.5)(postgres@3.4.4)
@@ -31,6 +34,9 @@ importers:
       uuid:
         specifier: ^9.0.1
         version: 9.0.1
+      zod:
+        specifier: ^3.22.5
+        version: 3.22.5
     devDependencies:
       '@types/node':
         specifier: ^20.11.17
@@ -481,7 +487,6 @@ packages:
     dependencies:
       hono: 4.2.5
       zod: 3.22.5
-    dev: true
 
   /@types/node@20.12.7:
     resolution: {integrity: sha512-wq0cICSkRLVaf3UGLMGItu/PtdY7oaXaI/RVU+xliKVOtRna3PRY57ZDfztpDL0n11vfymMUnXv8QwYCO7L1wg==}
