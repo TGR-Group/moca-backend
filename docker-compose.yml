@@ -1,0 +1,34 @@
+version: "3"
+
+services:
+  db:
+    image: postgres:16
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+  node:
+    image: node:20
+    platform: linux/amd64
+    volumes:
+      - ./:/moca
+      - node-modules-node:/moca/node_modules
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@db
+    tty: true
+    tmpfs: /moca-tmp
+    command: >
+      bash -c "cd /moca &&
+      npm install -g pnpm &&
+      pnpm i &&
+      pnpm run dev"
+    depends_on:
+      - db
+volumes:
+  pg-data:
+  node-modules-node:
+networks:
+  voicevox_network:
+    driver: bridge
