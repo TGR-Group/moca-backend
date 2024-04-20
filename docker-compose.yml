@@ -25,12 +25,9 @@ services:
       bash -c "cd /moca &&
       npm install -g pnpm &&
       pnpm i &&
-      pnpm run dev"
+      pnpm run start"
     depends_on:
       - db
 volumes:
   pg-data:
   node-modules-node:
-networks:
-  voicevox_network:
-    driver: bridge
