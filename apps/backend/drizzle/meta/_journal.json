@@ -15,6 +15,41 @@
       "when": 1713625462776,
       "tag": "0001_jazzy_ogun",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1713633605894,
+      "tag": "0002_strange_amphibian",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1714156673137,
+      "tag": "0003_clumsy_doctor_spectrum",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1714156939573,
+      "tag": "0004_skinny_thunderbolt_ross",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1714156955519,
+      "tag": "0005_fixed_morbius",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1714157150101,
+      "tag": "0006_special_starjammers",
+      "breakpoints": true
     }
   ]
 }
