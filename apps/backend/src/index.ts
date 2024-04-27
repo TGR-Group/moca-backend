@@ -2,16 +2,20 @@ import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import postgres from 'postgres';
 import { drizzle } from 'drizzle-orm/postgres-js';
-import { users, queues, programs } from '../db/schema';
+import { users, queues, programs, staff } from '../db/schema';
 import { zeroPadding } from '../utils/zeroPadding';
 import { v4 as uuidv4 } from 'uuid';
 import { bearerAuth } from 'hono/bearer-auth';
 import { and, eq, gt, lt, or } from 'drizzle-orm';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
-import { extractNumbersFromString } from '../utils/extractNumbersFromString';
+import dotenv from 'dotenv';
+import cryptoRandomString from 'crypto-random-string';
+import { hashPassword, verifyPassword } from '../utils/password';
 
-const app = new Hono()
+dotenv.config();
+
+const app = new Hono();
 
 const queryClient = postgres(process.env.DATABASE_URL || "postgres://postgres:postgres@db:5432");
 const db = drizzle(queryClient);
@@ -30,7 +34,7 @@ app.post('/register', async (c) => {
       return c.json({ success: false, error: "Failed to register" }, 500);
     }
 
-    return c.json({ success: true, id: user.id, screen_id: idPrefix + zeroPadding(user.id, 5), token: user.token });
+    return c.json({ success: true, id: user.id, screenId: idPrefix + zeroPadding(user.id, 5), token: user.token });
   } catch (e) {
     return c.json({ success: false, error: "Failed to register" }, 500);
   }
@@ -47,13 +51,13 @@ app.use("/visitor/*",
   zValidator(
     "json",
     z.object({
-      user_id: z.number(),
+      userId: z.number(),
     })
   ),
   bearerAuth({
     verifyToken: async (token, c) => {
       try {
-        const { user_id: userId } = await c.req.json();
+        const { userId } = await c.req.json();
         const user = await db.select().from(users).where(and(eq(users.token, token), eq(users.id, userId)));
         return !!user[0];
       } catch (e) {
@@ -68,10 +72,10 @@ app.post("/visitor/queue",
   zValidator(
     "json",
     z.object({
-      user_id: z.number(),
+      userId: z.number(),
     })
   ), async (c) => {
-    const { user_id: userId } = c.req.valid("json");
+    const { userId } = c.req.valid("json");
 
     const queue = await db.select().from(queues).where(
       and(eq(queues.userId, userId),
@@ -89,8 +93,8 @@ app.post("/visitor/queue",
       return {
         success: true,
         status: q.status,
-        program_id: q.programId,
-        called_at: q.calledAt,
+        programId: q.programId,
+        calledAt: q.calledAt,
       }
     }));
 
@@ -101,11 +105,11 @@ app.post("/visitor/wait",
   zValidator(
     "json",
     z.object({
-      user_id: z.number(),
-      program_id: z.string().uuid(),
+      userId: z.number(),
+      programId: z.string().uuid(),
     })
   ), async (c) => {
-    const { user_id: userId, program_id: programId } = c.req.valid("json");
+    const { userId, programId } = c.req.valid("json");
 
     // programIdが存在するかつ公開されているか確認
     const program = await db.select().from(programs).where(and(eq(programs.id, programId), eq(programs.public, true)));
@@ -147,11 +151,11 @@ app.post("/visitor/wait",
 app.put("/visitor/cancel", zValidator(
   "json",
   z.object({
-    user_id: z.number(),
-    program_id: z.string().uuid(),
+    userId: z.number(),
+    programId: z.string().uuid(),
   })
 ), async (c) => {
-  const { user_id: userId, program_id: programId } = c.req.valid("json");
+  const { userId, programId } = c.req.valid("json");
 
 
   await db.update(queues).set({ status: "canceled" }).where(
@@ -164,6 +168,12 @@ app.put("/visitor/cancel", zValidator(
 
   return c.json({ success: true, message: "Cancelled waiting" })
 })
+
+app.get("/staff/login", (c) => {
+  return c.json({ message: "Logged in" })
+});
+
+
 
 app.post("/staff/call", (c) => {
   return c.json({ message: "Calling next visitor" })
@@ -184,6 +194,62 @@ app.get("/staff/wait", (c) => {
 app.get("/staff/called", (c) => {
   return c.json({ message: "Visitor called" })
 })
+
+// スーパーアドミンの認証
+app.use(
+  '/admin/*',
+  bearerAuth({
+    verifyToken: async (token, c) => {
+      return !!process.env.SUPER_PASSWORD_HASH && await verifyPassword(token, process.env.SUPER_PASSWORD_HASH)
+    },
+  })
+)
+
+// スタッフのアカウントの一覧を取得
+app.get("/admin/staff", async (c) => {
+  const staffList = await db.select().from(staff);
+  return c.json(staffList.map((staff) => ({ id: staff.id, name: staff.name })));
+});
+
+// スタッフのアカウントを作成
+const createUserSchema = z.object({
+  nameList: z.array(z.string()),
+});
+app.post("/admin/staff/create",
+  zValidator("json", createUserSchema),
+  async (c) => {
+    const { nameList } = c.req.valid("json");
+    const staffList = await Promise.all(nameList
+      .filter((name, index, self) => self.indexOf(name) === index)
+      .map(async (name) => {
+        const password = cryptoRandomString({ length: 10 });
+        return {
+          name,
+          password: password,
+          passwordHash: await hashPassword(password),
+        }
+      }));
+
+    const insertedStaff = await db.insert(staff).values(staffList.map((staff) => ({
+      name: staff.name,
+      passwordHash: staff.passwordHash,
+      createdAt: new Date(),
+    }))).onConflictDoNothing().returning({ name: staff.name });
+
+    return c.json({ success: true, staffList: insertedStaff });
+  });
+
+app.delete("/admin/staff/:userId",
+  zValidator("param", z.object({
+    userId: z.string().uuid(),
+  })),
+  async (c) => {
+    const { userId } = c.req.valid("param");
+
+    await db.delete(staff).where(eq(staff.id, userId));
+
+    return c.json({ success: true });
+  });
 
 const port = 8080
 console.log(`Server is running on port ${port}`)

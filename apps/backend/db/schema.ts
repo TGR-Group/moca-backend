@@ -7,7 +7,7 @@ export const users = pgTable('users', {
 });
 
 export const queues = pgTable('queues', {
-    id: serial('id').primaryKey(),
+    id: uuid('id').defaultRandom().primaryKey(),
     userId: integer('user_id').notNull(),
     createdAt: timestamp('created_at').notNull(),
     calledAt: timestamp('called_at'),
@@ -23,6 +23,14 @@ export const programs = pgTable('programs', {
     description: varchar('description').notNull(),
     className: varchar('class_name').notNull(),
     public: boolean('public').notNull(),
+    staffId: uuid('staff_id').notNull(),
     createdAt: timestamp('created_at').notNull(),
     updatedAt: timestamp('updated_at').notNull(),
+});
+
+export const staff = pgTable('staff', {
+    id: uuid('id').defaultRandom().primaryKey(),
+    name: varchar('name').notNull().unique(),
+    passwordHash: varchar('password_hash').notNull(),
+    createdAt: timestamp('created_at').notNull(),
 });
