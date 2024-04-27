@@ -239,6 +239,7 @@ app.post("/admin/staff/create",
     return c.json({ success: true, staffList: insertedStaff });
   });
 
+// スタッフのアカウントを削除
 app.delete("/admin/staff/:userId",
   zValidator("param", z.object({
     userId: z.string().uuid(),
