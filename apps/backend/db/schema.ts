@@ -1,22 +1,27 @@
-import { boolean, integer, pgEnum, pgTable, serial, uniqueIndex, varchar } from 'drizzle-orm/pg-core';
+import { boolean, integer, pgEnum, pgTable, serial, uniqueIndex, uuid, varchar, timestamp } from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
     id: serial('id').primaryKey(),
     token: varchar('token').notNull(),
-    createdAt: varchar('created_at').notNull(),
+    createdAt: timestamp('created_at').notNull(),
 });
 
 export const queues = pgTable('queues', {
     id: serial('id').primaryKey(),
     userId: integer('user_id').notNull(),
-    createdAt: varchar('created_at').notNull(),
+    createdAt: timestamp('created_at').notNull(),
+    calledAt: timestamp('called_at'),
+    inAt: timestamp('in_at'),
+    exitedAt: timestamp('exited_at'),
     status: varchar('status', { enum: ["wait", "called", "in", "exited"] }).notNull(),
 });
 
 export const programs = pgTable('programs', {
-    id: varchar('id').primaryKey(),
+    id: uuid('id').defaultRandom().primaryKey(),
     name: varchar('name').notNull(),
     description: varchar('description').notNull(),
     className: varchar('class_name').notNull(),
     public: boolean('public').notNull(),
+    createdAt: timestamp('created_at').notNull(),
+    updatedAt: timestamp('updated_at').notNull(),
 });
