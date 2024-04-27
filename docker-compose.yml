@@ -7,6 +7,7 @@ services:
       - "5432:5432"
     environment:
       POSTGRES_PASSWORD: postgres
+      TZ: UTC
     volumes:
       - pg-data:/var/lib/postgresql/data
     networks:
@@ -19,6 +20,7 @@ services:
       - node-modules-node:/moca/node_modules
     environment:
       - DATABASE_URL=postgres://postgres:postgres@db:5432
+      - TZ=UTC
     tty: true
     tmpfs: /moca-tmp
     ports:

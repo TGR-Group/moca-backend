@@ -22,17 +22,15 @@ const callWaitingTime = 1000 * 60 * 30; // 30分
 // ユーザーが初回アクセス時にトークンを発行する
 app.post('/register', async (c) => {
   try {
-    const token = uuidv4();
     const result = await db.insert(users).values({
-      createdAt: new Date(),
-      token
+      createdAt: new Date()
     }).returning({ id: users.id, token: users.token })
     const user = result[0];
     if (!user) {
       return c.json({ success: false, error: "Failed to register" }, 500);
     }
 
-    return c.json({ success: true, id: idPrefix + zeroPadding(user.id, 5), token: user.token });
+    return c.json({ success: true, id: user.id, screen_id: idPrefix + zeroPadding(user.id, 5), token: user.token });
   } catch (e) {
     return c.json({ success: false, error: "Failed to register" }, 500);
   }
@@ -46,29 +44,68 @@ app.get('/programs', async (c) => {
 
 // ユーザーがトークンを使ってアクションを行う際の認証
 app.use("/visitor/*",
+  zValidator(
+    "json",
+    z.object({
+      user_id: z.number(),
+    })
+  ),
   bearerAuth({
     verifyToken: async (token, c) => {
-      const { user_id: userId }: { user_id?: string } = await c.req.json();
-      if (!userId || !parseInt(extractNumbersFromString(userId))) {
+      try {
+        const { user_id: userId } = await c.req.json();
+        const user = await db.select().from(users).where(and(eq(users.token, token), eq(users.id, userId)));
+        return !!user[0];
+      } catch (e) {
         return false;
       }
-      const user = await db.select().from(users).where(and(eq(users.token, token), eq(users.id, parseInt(extractNumbersFromString(userId)))));
-      return !!user[0];
     },
   })
 )
+
+// ユーザーが並んでいる出し物
+app.post("/visitor/queue",
+  zValidator(
+    "json",
+    z.object({
+      user_id: z.number(),
+    })
+  ), async (c) => {
+    const { user_id: userId } = c.req.valid("json");
+
+    const queue = await db.select().from(queues).where(
+      and(eq(queues.userId, userId),
+        or(eq(queues.status, "wait"),
+          and(eq(queues.status, "called"),
+            gt(queues.calledAt,
+              new Date(Date.now() - callWaitingTime),
+            ),
+          )
+        )
+      )
+    );
+
+    return c.json(queue.map((q) => {
+      return {
+        success: true,
+        status: q.status,
+        program_id: q.programId,
+        called_at: q.calledAt,
+      }
+    }));
+
+  });
 
 // ユーザーが出し物に並ぶ
 app.post("/visitor/wait",
   zValidator(
     "json",
     z.object({
-      user_id: z.string(),
-      program_id: z.string(),
+      user_id: z.number(),
+      program_id: z.string().uuid(),
     })
   ), async (c) => {
-    const { user_id, program_id: programId } = c.req.valid("json");
-    const userId = parseInt(extractNumbersFromString(user_id));
+    const { user_id: userId, program_id: programId } = c.req.valid("json");
 
     // programIdが存在するかつ公開されているか確認
     const program = await db.select().from(programs).where(and(eq(programs.id, programId), eq(programs.public, true)));
@@ -84,7 +121,7 @@ app.post("/visitor/wait",
         and(eq(queues.userId, userId), eq(queues.status, "called"),
           gt(queues.calledAt,
             new Date(Date.now() - callWaitingTime),
-          )
+          ),
         )
       )
     );
@@ -97,14 +134,35 @@ app.post("/visitor/wait",
     await db.insert(queues).values({
       userId,
       status: "wait",
-      createdAt: new Date()
+      createdAt: new Date(),
+      programId,
     });
 
-    return c.json({ message: "Waiting for staff to call" + userId })
+    return c.json({
+      success: true,
+      message: "Waiting",
+    })
   })
 
-app.post("/visitor/cancel", (c) => {
-  return c.json({ message: "Cancelled waiting" })
+app.put("/visitor/cancel", zValidator(
+  "json",
+  z.object({
+    user_id: z.number(),
+    program_id: z.string().uuid(),
+  })
+), async (c) => {
+  const { user_id: userId, program_id: programId } = c.req.valid("json");
+
+
+  await db.update(queues).set({ status: "canceled" }).where(
+    and(
+      eq(queues.userId, userId),
+      eq(queues.programId, programId),
+      or(eq(queues.status, "wait"), eq(queues.status, "called")),
+    )
+  );
+
+  return c.json({ success: true, message: "Cancelled waiting" })
 })
 
 app.post("/staff/call", (c) => {

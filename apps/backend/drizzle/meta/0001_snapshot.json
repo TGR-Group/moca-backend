@@ -1,6 +1,6 @@
 {
-  "id": "c4d8190e-cd72-4cb6-9e8f-5cb0d1408da3",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "ebf52c7f-378f-4797-a932-6e92e30d908f",
+  "prevId": "c4d8190e-cd72-4cb6-9e8f-5cb0d1408da3",
   "version": "5",
   "dialect": "pg",
   "tables": {
@@ -100,6 +100,12 @@
         "status": {
           "name": "status",
           "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "program_id": {
+          "name": "program_id",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         }

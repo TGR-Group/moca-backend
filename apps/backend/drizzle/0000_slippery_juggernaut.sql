@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS "queues" (
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "users" (
 	"id" serial PRIMARY KEY NOT NULL,
-	"token" varchar NOT NULL,
-	"created_at" timestamp NOT NULL
+	"token" uuid DEFAULT gen_random_uuid() NOT NULL,
+	"created_at" timestamp NOT NULL,
+	CONSTRAINT "users_token_unique" UNIQUE("token")
 );

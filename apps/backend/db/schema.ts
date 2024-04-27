@@ -2,7 +2,7 @@ import { boolean, integer, pgEnum, pgTable, serial, uniqueIndex, uuid, varchar, 
 
 export const users = pgTable('users', {
     id: serial('id').primaryKey(),
-    token: varchar('token').notNull(),
+    token: uuid('token').defaultRandom().unique().notNull(),
     createdAt: timestamp('created_at').notNull(),
 });
 
@@ -13,7 +13,8 @@ export const queues = pgTable('queues', {
     calledAt: timestamp('called_at'),
     inAt: timestamp('in_at'),
     exitedAt: timestamp('exited_at'),
-    status: varchar('status', { enum: ["wait", "called", "in", "exited"] }).notNull(),
+    status: varchar('status', { enum: ["wait", "called", "in", "exited", "canceled"] }).notNull(),
+    programId: uuid('program_id').notNull(),
 });
 
 export const programs = pgTable('programs', {

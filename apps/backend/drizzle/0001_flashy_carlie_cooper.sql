@@ -1,0 +1,1 @@
+ALTER TABLE "queues" ADD COLUMN "program_id" uuid NOT NULL;
