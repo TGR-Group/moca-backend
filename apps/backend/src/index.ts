@@ -120,7 +120,7 @@ app.post("/visitor/wait",
 
     const { programId } = c.req.valid("json");
 
-    // programIdが存在するかつ公開されているか確認
+    // programIdが存在するか確認
     const program = await db.select().from(programs).where(and(eq(programs.id, programId), eq(programs.waitEnabled, true)));
 
     if (!program[0]) {
@@ -380,21 +380,163 @@ app.post("/staff/call", zValidator("json", z.object({
   return c.json({ success: true });
 })
 
-app.post("/staff/enter", (c) => {
-  return c.json({ message: "Entering visitor" })
+app.post("/staff/enter", zValidator("json", z.object({
+  queueId: z.string().uuid(),
+})), async (c) => {
+  const { queueId } = c.req.valid("json");
+
+  const staffId = getStaffUserId(c);
+
+  if (!staffId) {
+    return c.json({ success: false, error: "Unauthorized" }, 401);
+  }
+
+  const queueDataList = await db.select().from(queues).where(eq(queues.id, queueId));
+  if (!queueDataList[0]) {
+    return c.json({ success: false, error: "Queue not found" }, 404);
+  }
+
+  const queueData = queueDataList[0];
+
+  if (queueData.status !== "called" || !queueData.calledAt) {
+    return c.json({ success: false, error: "Queue is not called" }, 400);
+  }
+
+  const programId = queueData.programId;
+
+  const programDataList = await db.select().from(programs).where(eq(programs.id, programId));
+  if (!programDataList[0]) {
+    return c.json({ success: false, error: "Program not found" }, 404);
+  }
+
+  const programData = programDataList[0];
+
+  if (staffId !== programData.staffId) {
+    return c.json({ success: false, error: "Unauthorized" }, 401);
+  }
+
+  if (queueData.calledAt < new Date(Date.now() - callWaitingTime)) {
+    return c.json({ success: false, error: "Time out" }, 400);
+  }
+
+  await db.update(queues).set({
+    status: "in",
+    inAt: new Date(),
+  }).where(eq(queues.id, queueId));
+
+  return c.json({ success: true });
+
 })
 
-app.post("/staff/quit", (c) => {
-  return c.json({ message: "Quitting visitor" })
+app.post("/staff/quit", zValidator("json", z.object({
+  queueId: z.string().uuid(),
+})), async (c) => {
+  const { queueId } = c.req.valid("json");
+
+  const staffId = getStaffUserId(c);
+
+  if (!staffId) {
+    return c.json({ success: false, error: "Unauthorized" }, 401);
+  }
+
+  const queueDataList = await db.select().from(queues).where(eq(queues.id, queueId));
+  if (!queueDataList[0]) {
+    return c.json({ success: false, error: "Queue not found" }, 404);
+  }
+
+  const queueData = queueDataList[0];
+
+  if (queueData.status !== "in" || !queueData.calledAt || !queueData.inAt) {
+    return c.json({ success: false, error: "Queue is not in" }, 400);
+  }
+
+  const programId = queueData.programId;
+
+  const programDataList = await db.select().from(programs).where(eq(programs.id, programId));
+  if (!programDataList[0]) {
+    return c.json({ success: false, error: "Program not found" }, 404);
+  }
+
+  const programData = programDataList[0];
+
+  if (staffId !== programData.staffId) {
+    return c.json({ success: false, error: "Unauthorized" }, 401);
+  }
+
+  await db.update(queues).set({
+    status: "exited",
+    exitedAt: new Date(),
+  }).where(eq(queues.id, queueId));
+
+  return c.json({ success: true });
 })
 
-app.get("/staff/wait", (c) => {
-  return c.json({ message: "Waiting for visitor" })
-})
+app.get("/staff/wait/:programId",
+  zValidator("param", z.object({
+    programId: z.string().uuid(),
+  })), async (c) => {
+    const programId = c.req.valid("param").programId;
 
-app.get("/staff/called", (c) => {
-  return c.json({ message: "Visitor called" })
-})
+    const staffId = getStaffUserId(c);
+
+    if (!staffId) {
+      return c.json({ success: false, error: "Unauthorized" }, 401);
+    }
+
+    const programList = await db.select().from(programs).where(
+      and(
+        eq(programs.id, programId),
+        eq(programs.staffId, staffId),
+      )
+    );
+
+    if (!programList[0]) {
+      return c.json({ success: false, error: "Program not found" }, 404);
+    }
+
+    const queueList = await db.select().from(queues).where(
+      and(
+        eq(queues.programId, programId),
+        eq(queues.status, "wait"),
+      )
+    );
+
+    return c.json(queueList);
+  })
+
+app.get("/staff/called/:programId",
+  zValidator("param", z.object({
+    programId: z.string().uuid(),
+  })), async (c) => {
+    const programId = c.req.valid("param").programId;
+
+    const staffId = getStaffUserId(c);
+
+    if (!staffId) {
+      return c.json({ success: false, error: "Unauthorized" }, 401);
+    }
+
+    const programList = await db.select().from(programs).where(
+      and(
+        eq(programs.id, programId),
+        eq(programs.staffId, staffId),
+      )
+    );
+
+    if (!programList[0]) {
+      return c.json({ success: false, error: "Program not found" }, 404);
+    }
+
+    const queueList = await db.select().from(queues).where(
+      and(
+        eq(queues.programId, programId),
+        eq(queues.status, "called"),
+        gt(queues.calledAt, new Date(Date.now() - callWaitingTime)),
+      )
+    );
+
+    return c.json(queueList);
+  })
 
 // スーパーアドミンの認証
 app.use(
