@@ -43,7 +43,16 @@ app.post('/register', async (c) => {
 // 出し物の一覧を取得する
 app.get('/programs', async (c) => {
   const _programs = await db.select().from(programs).where(eq(programs.public, true));
-  return c.json(_programs);
+  return c.json(_programs.map(_v => {
+    return {
+      id: _v.id,
+      name: _v.name,
+      description: _v.description,
+      category: _v.category,
+      grade: _v.grade,
+      className: _v.className
+    }
+  }));
 })
 
 // ユーザーがトークンを使ってアクションを行う際の認証
@@ -112,7 +121,7 @@ app.post("/visitor/wait",
     const { userId, programId } = c.req.valid("json");
 
     // programIdが存在するかつ公開されているか確認
-    const program = await db.select().from(programs).where(and(eq(programs.id, programId), eq(programs.public, true)));
+    const program = await db.select().from(programs).where(and(eq(programs.id, programId), eq(programs.public, true), eq(programs.waitEnabled, true)));
 
     if (!program[0]) {
       return c.json({ success: false, error: "Program not found" }, 404);

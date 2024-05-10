@@ -26,6 +26,7 @@ export const programs = pgTable('programs', {
     className: varchar('class_name'),
     public: boolean('public').notNull(),
     staffId: uuid('staff_id').notNull(),
+    waitEnabled: boolean('wait_enabled').default(true).notNull(),
     createdAt: timestamp('created_at').notNull(),
     updatedAt: timestamp('updated_at').notNull(),
 });

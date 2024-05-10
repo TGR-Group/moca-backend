@@ -1,0 +1,1 @@
+ALTER TABLE "programs" ADD COLUMN "wait_enabled" boolean DEFAULT true NOT NULL;
