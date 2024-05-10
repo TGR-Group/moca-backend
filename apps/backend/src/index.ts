@@ -6,12 +6,14 @@ import { users, queues, programs, staff } from '../db/schema';
 import { zeroPadding } from '../utils/zeroPadding';
 import { v4 as uuidv4 } from 'uuid';
 import { bearerAuth } from 'hono/bearer-auth';
-import { and, eq, gt, lt, or } from 'drizzle-orm';
+import { and, eq, gt, lt, or, sum } from 'drizzle-orm';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import dotenv from 'dotenv';
 import cryptoRandomString from 'crypto-random-string';
 import { hashPassword, verifyPassword } from '../utils/password';
+import { basicAuth } from 'hono/basic-auth';
+import { getAuthUserId, getStaffUserId } from '../utils/getAuthUserId';
 
 dotenv.config();
 
@@ -42,12 +44,13 @@ app.post('/register', async (c) => {
 
 // 出し物の一覧を取得する
 app.get('/programs', async (c) => {
-  const _programs = await db.select().from(programs).where(eq(programs.public, true));
+  const _programs = await db.select().from(programs);
   return c.json(_programs.map(_v => {
     return {
       id: _v.id,
       name: _v.name,
       description: _v.description,
+      summary: _v.summary,
       category: _v.category,
       grade: _v.grade,
       className: _v.className
@@ -57,17 +60,11 @@ app.get('/programs', async (c) => {
 
 // ユーザーがトークンを使ってアクションを行う際の認証
 app.use("/visitor/*",
-  zValidator(
-    "json",
-    z.object({
-      userId: z.number(),
-    })
-  ),
-  bearerAuth({
-    verifyToken: async (token, c) => {
+  basicAuth({
+    verifyUser: async (username, password) => {
       try {
-        const { userId } = await c.req.json();
-        const user = await db.select().from(users).where(and(eq(users.token, token), eq(users.id, userId)));
+        if (!username || !password || !parseInt(username)) return false;
+        const user = await db.select().from(users).where(and(eq(users.token, password), eq(users.id, parseInt(username))));
         return !!user[0];
       } catch (e) {
         return false;
@@ -77,51 +74,54 @@ app.use("/visitor/*",
 )
 
 // ユーザーが並んでいる出し物
-app.post("/visitor/queue",
-  zValidator(
-    "json",
-    z.object({
-      userId: z.number(),
-    })
-  ), async (c) => {
-    const { userId } = c.req.valid("json");
+app.get("/visitor/queue", async (c) => {
+  const userId = getAuthUserId(c);
 
-    const queue = await db.select().from(queues).where(
-      and(eq(queues.userId, userId),
-        or(eq(queues.status, "wait"),
-          and(eq(queues.status, "called"),
-            gt(queues.calledAt,
-              new Date(Date.now() - callWaitingTime),
-            ),
-          )
+  if (!userId) {
+    return c.json({ success: false, error: "Unauthorized" }, 401);
+  }
+
+  const queue = await db.select().from(queues).where(
+    and(eq(queues.userId, userId),
+      or(eq(queues.status, "wait"),
+        and(eq(queues.status, "called"),
+          gt(queues.calledAt,
+            new Date(Date.now() - callWaitingTime),
+          ),
         )
       )
-    );
+    )
+  );
 
-    return c.json(queue.map((q) => {
-      return {
-        success: true,
-        status: q.status,
-        programId: q.programId,
-        calledAt: q.calledAt,
-      }
-    }));
+  return c.json(queue.map((q) => {
+    return {
+      success: true,
+      status: q.status,
+      programId: q.programId,
+      calledAt: q.calledAt,
+    }
+  }));
 
-  });
+});
 
 // ユーザーが出し物に並ぶ
 app.post("/visitor/wait",
   zValidator(
     "json",
     z.object({
-      userId: z.number(),
       programId: z.string().uuid(),
     })
   ), async (c) => {
-    const { userId, programId } = c.req.valid("json");
+    const userId = getAuthUserId(c);
+
+    if (!userId) {
+      return c.json({ success: false, error: "Unauthorized" }, 401);
+    }
+
+    const { programId } = c.req.valid("json");
 
     // programIdが存在するかつ公開されているか確認
-    const program = await db.select().from(programs).where(and(eq(programs.id, programId), eq(programs.public, true), eq(programs.waitEnabled, true)));
+    const program = await db.select().from(programs).where(and(eq(programs.id, programId), eq(programs.waitEnabled, true)));
 
     if (!program[0]) {
       return c.json({ success: false, error: "Program not found" }, 404);
@@ -157,14 +157,20 @@ app.post("/visitor/wait",
     })
   })
 
+// 出し物の並びをキャンセル
 app.put("/visitor/cancel", zValidator(
   "json",
   z.object({
-    userId: z.number(),
     programId: z.string().uuid(),
   })
 ), async (c) => {
-  const { userId, programId } = c.req.valid("json");
+  const userId = getAuthUserId(c);
+
+  if (!userId) {
+    return c.json({ success: false, error: "Unauthorized" }, 401);
+  }
+
+  const { programId } = c.req.valid("json");
 
 
   await db.update(queues).set({ status: "canceled" }).where(
@@ -178,14 +184,200 @@ app.put("/visitor/cancel", zValidator(
   return c.json({ success: true, message: "Cancelled waiting" })
 })
 
-app.get("/staff/login", (c) => {
-  return c.json({ message: "Logged in" })
-});
+// staffの認証
+app.use("/staff/*",
+  basicAuth({
+    verifyUser: async (username, password) => {
+      try {
+        if (!username || !password) return false;
+        const user = await db.select().from(staff).where(eq(staff.id, username));
+        if (!!user[0]) {
+          return await verifyPassword(password, user[0].passwordHash);
+        } else {
+          return false;
+        }
+      } catch (e) {
+        return false;
+      }
+    },
+  })
+)
 
+// プログラム一覧を取得する
+app.get("/staff/program", async (c) => {
+  const staffId = getStaffUserId(c);
 
+  if (!staffId) {
+    return c.json({ success: false, error: "Unauthorized" }, 401);
+  }
 
-app.post("/staff/call", (c) => {
-  return c.json({ message: "Calling next visitor" })
+  const programList = await db.select().from(programs).where(eq(programs.staffId, staffId));
+  return c.json(programList.map((program) => ({
+    id: program.id,
+    name: program.name,
+    description: program.description,
+    summary: program.summary,
+    category: program.category,
+    grade: program.grade,
+    className: program.className,
+    waitEnabled: program.waitEnabled,
+  })));
+})
+
+// プログラムを登録する
+app.post("/staff/program", zValidator(
+  "json",
+  z.object({
+    name: z.string(),
+    description: z.string(),
+    summary: z.string(),
+    category: z.enum(["食販", "飲食店", "体験型", "展示", "イベント", "その他"]),
+    grade: z.enum(["1年生", "2年生", "3年生", "部活", "その他"]),
+    className: z.string(),
+    waitEnabled: z.boolean(),
+  })
+), async (c) => {
+  const staffId = getStaffUserId(c);
+
+  if (!staffId) {
+    return c.json({ success: false, error: "Unauthorized" }, 401);
+  }
+
+  const { name, description, summary, category, grade, className, waitEnabled } = c.req.valid("json");
+
+  let program;
+  try {
+    program = await db.insert(programs).values({
+      name,
+      description,
+      summary,
+      category,
+      grade,
+      className,
+      staffId,
+      waitEnabled,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }).returning({ id: programs.id });
+  } catch (e) {
+    return c.json({ success: false, error: "Failed to create" }, 500);
+  }
+
+  return c.json({ success: true, programId: program[0].id });
+})
+
+// プログラムを削除する
+app.delete("/staff/program/:programId", zValidator(
+  "param",
+  z.object({
+    programId: z.string().uuid(),
+  })
+), async (c) => {
+  const staffId = getStaffUserId(c);
+
+  if (!staffId) {
+    return c.json({ success: false, error: "Unauthorized" }, 401);
+  }
+
+  const { programId } = c.req.valid("param");
+
+  const deleteProgramList = await db.delete(programs).where(and(eq(programs.id, programId), eq(programs.staffId, staffId))).returning({ id: programs.id });
+
+  if (!deleteProgramList[0]) {
+    return c.json({ success: false, error: "Program not found" }, 404);
+  }
+
+  return c.json({ success: true });
+})
+
+// プログラムを変更する
+app.put("/staff/program/:programId", zValidator(
+  "param",
+  z.object({
+    programId: z.string().uuid(),
+  })
+), zValidator(
+  "json",
+  z.object({
+    name: z.string(),
+    description: z.string(),
+    summary: z.string(),
+    category: z.enum(["食販", "飲食店", "体験型", "展示", "イベント", "その他"]),
+    grade: z.enum(["1年生", "2年生", "3年生", "部活", "その他"]),
+    className: z.string()
+  })
+), async (c) => {
+  const staffId = getStaffUserId(c);
+
+  if (!staffId) {
+    return c.json({ success: false, error: "Unauthorized" }, 401);
+  }
+
+  const { programId } = c.req.valid("param");
+  const { name, description, summary, category, grade, className } = c.req.valid("json");
+
+  try {
+    const updateProgramList = await db.update(programs).set({
+      name,
+      description,
+      summary,
+      category,
+      grade,
+      className,
+      updatedAt: new Date(),
+    }).where(and(eq(programs.id, programId), eq(programs.staffId, staffId))).returning({ id: programs.id });
+
+    if (!updateProgramList[0]) {
+      return c.json({ success: false, error: "Program not found" }, 404);
+    }
+
+    return c.json({ success: true });
+  } catch (e) {
+    return c.json({ success: false, error: "Failed to update" }, 500);
+  }
+})
+
+app.post("/staff/call", zValidator("json", z.object({
+  queueId: z.string().uuid(),
+})), async (c) => {
+  const { queueId } = c.req.valid("json");
+
+  const staffId = getStaffUserId(c);
+
+  if (!staffId) {
+    return c.json({ success: false, error: "Unauthorized" }, 401);
+  }
+
+  const queueDataList = await db.select().from(queues).where(eq(queues.id, queueId));
+  if (!queueDataList[0]) {
+    return c.json({ success: false, error: "Queue not found" }, 404);
+  }
+
+  const queueData = queueDataList[0];
+
+  if (queueData.status !== "wait") {
+    return c.json({ success: false, error: "Queue is not waiting" }, 400);
+  }
+
+  const programId = queueData.programId;
+
+  const programDataList = await db.select().from(programs).where(eq(programs.id, programId));
+  if (!programDataList[0]) {
+    return c.json({ success: false, error: "Program not found" }, 404);
+  }
+
+  const programData = programDataList[0];
+
+  if (staffId !== programData.staffId) {
+    return c.json({ success: false, error: "Unauthorized" }, 401);
+  }
+
+  await db.update(queues).set({
+    status: "called",
+    calledAt: new Date(),
+  }).where(eq(queues.id, queueId));
+
+  return c.json({ success: true });
 })
 
 app.post("/staff/enter", (c) => {
@@ -221,17 +413,16 @@ app.get("/admin/staff", async (c) => {
 });
 
 // スタッフのアカウントを作成
-const createUserSchema = z.object({
-  nameList: z.array(z.string()),
-});
 app.post("/admin/staff/create",
-  zValidator("json", createUserSchema),
+  zValidator("json", z.object({
+    nameList: z.array(z.string()),
+  })),
   async (c) => {
     const { nameList } = c.req.valid("json");
     const staffList = await Promise.all(nameList
       .filter((name, index, self) => self.indexOf(name) === index)
       .map(async (name) => {
-        const password = cryptoRandomString({ length: 10 });
+        const password = cryptoRandomString({ length: 15 });
         return {
           name,
           password: password,
@@ -243,9 +434,11 @@ app.post("/admin/staff/create",
       name: staff.name,
       passwordHash: staff.passwordHash,
       createdAt: new Date(),
-    }))).onConflictDoNothing().returning({ name: staff.name });
+    }))).onConflictDoNothing().returning({ name: staff.name, id: staff.id });
 
-    return c.json({ success: true, staffList: insertedStaff });
+    return c.json({
+      success: true, staffList: insertedStaff.map((staff) => ({ id: staff.id, ame: staff.name, password: staffList.find((s) => s.name === staff.name)?.password }))
+    });
   });
 
 // スタッフのアカウントを削除

@@ -29,6 +29,20 @@
       "when": 1715347726521,
       "tag": "0003_redundant_mantis",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1715359874306,
+      "tag": "0004_robust_genesis",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1715360311592,
+      "tag": "0005_daffy_shard",
+      "breakpoints": true
     }
   ]
 }
