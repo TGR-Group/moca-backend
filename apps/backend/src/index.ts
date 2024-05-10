@@ -6,7 +6,7 @@ import { users, queues, programs, staff } from '../db/schema';
 import { zeroPadding } from '../utils/zeroPadding';
 import { v4 as uuidv4 } from 'uuid';
 import { bearerAuth } from 'hono/bearer-auth';
-import { and, eq, gt, lt, or, sum } from 'drizzle-orm';
+import { and, avg, eq, gt, isNotNull, lt, ne, or, sql, sum } from 'drizzle-orm';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import dotenv from 'dotenv';
@@ -14,6 +14,7 @@ import cryptoRandomString from 'crypto-random-string';
 import { hashPassword, verifyPassword } from '../utils/password';
 import { basicAuth } from 'hono/basic-auth';
 import { getAuthUserId, getStaffUserId } from '../utils/getAuthUserId';
+import { interval } from 'drizzle-orm/pg-core';
 
 dotenv.config();
 
@@ -56,6 +57,53 @@ app.get('/programs', async (c) => {
       className: _v.className
     }
   }));
+})
+
+// 待ち時間を含めた出し物の詳細を取得する
+app.get('/program/:id', zValidator(
+  "param",
+  z.object({
+    id: z.string().uuid()
+  })
+), async (c) => {
+  const { id } = c.req.valid("param");
+
+  const programList = await db.select().from(programs).where(eq(programs.id, id));
+  if (!programList[0]) {
+    return c.json({ success: false, error: "Program not found" }, 404);
+  }
+
+  const program = programList[0];
+
+
+  const queueList = await db.select({
+    averageDurationSeconds: avg(
+      sql`extract(epoch from ${interval(
+        //@ts-ignore
+        sql`${queues.exitedAt} - ${queues.inAt}`
+      )})`
+    )
+  }).from(queues).where(
+    and(
+      eq(queues.programId, id),
+      eq(queues.status, "exited"),
+      isNotNull(queues.inAt),
+      isNotNull(queues.exitedAt),
+    )
+  );
+
+  return c.json({
+    success: true,
+    id: program.id,
+    name: program.name,
+    description: program.description,
+    summary: program.summary,
+    category: program.category,
+    grade: program.grade,
+    className: program.className,
+    waitEnabled: program.waitEnabled,
+    waitingTime: queueList[0]?.averageDurationSeconds || 0,
+  });
 })
 
 // ユーザーがトークンを使ってアクションを行う際の認証
