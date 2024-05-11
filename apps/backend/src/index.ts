@@ -96,14 +96,6 @@ app.get('/program/:id', zValidator(
     )
   );
 
-  let waitingTime = 0;
-
-  if (!queueList[0]?.averageDurationSeconds || !waitingCount[0].count) {
-    waitingTime = 0;
-  } else {
-    waitingTime = parseInt(queueList[0].averageDurationSeconds) * (waitingCount[0].count);
-  }
-
   return c.json({
     success: true,
     id: program.id,
@@ -114,7 +106,8 @@ app.get('/program/:id', zValidator(
     grade: program.grade,
     className: program.className,
     waitEnabled: program.waitEnabled,
-    waitingTime: waitingTime || 0,
+    avgStayLength: queueList[0]?.averageDurationSeconds || null,
+    waitingCount: waitingCount[0].count,
   });
 })
 
