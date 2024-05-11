@@ -43,6 +43,13 @@
       "when": 1715360311592,
       "tag": "0005_daffy_shard",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1715419169582,
+      "tag": "0006_fearless_reaper",
+      "breakpoints": true
     }
   ]
 }

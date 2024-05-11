@@ -1,0 +1,1 @@
+ALTER TABLE "queues" ADD COLUMN "stay_length" integer;

@@ -6,7 +6,7 @@ import { users, queues, programs, staff } from '../db/schema';
 import { zeroPadding } from '../utils/zeroPadding';
 import { v4 as uuidv4 } from 'uuid';
 import { bearerAuth } from 'hono/bearer-auth';
-import { and, avg, eq, gt, isNotNull, lt, ne, or, sql, sum } from 'drizzle-orm';
+import { and, avg, count, eq, gt, isNotNull, lt, ne, or, sql, sum } from 'drizzle-orm';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import dotenv from 'dotenv';
@@ -75,22 +75,34 @@ app.get('/program/:id', zValidator(
 
   const program = programList[0];
 
-
   const queueList = await db.select({
     averageDurationSeconds: avg(
-      sql`extract(epoch from ${interval(
-        //@ts-ignore
-        sql`${queues.exitedAt} - ${queues.inAt}`
-      )})`
+      queues.stayLength
     )
   }).from(queues).where(
     and(
       eq(queues.programId, id),
       eq(queues.status, "exited"),
-      isNotNull(queues.inAt),
-      isNotNull(queues.exitedAt),
+      isNotNull(queues.stayLength),
     )
   );
+
+  const waitingCount = await db.select({
+    count: count(queues.id)
+  }).from(queues).where(
+    and(
+      eq(queues.programId, id),
+      eq(queues.status, "wait"),
+    )
+  );
+
+  let waitingTime = 0;
+
+  if (!queueList[0]?.averageDurationSeconds || !waitingCount[0].count) {
+    waitingTime = 0;
+  } else {
+    waitingTime = parseInt(queueList[0].averageDurationSeconds) * (waitingCount[0].count);
+  }
 
   return c.json({
     success: true,
@@ -102,7 +114,7 @@ app.get('/program/:id', zValidator(
     grade: program.grade,
     className: program.className,
     waitEnabled: program.waitEnabled,
-    waitingTime: queueList[0]?.averageDurationSeconds || 0,
+    waitingTime: waitingTime || 0,
   });
 })
 
@@ -141,14 +153,45 @@ app.get("/visitor/queue", async (c) => {
     )
   );
 
-  return c.json(queue.map((q) => {
-    return {
-      success: true,
-      status: q.status,
-      programId: q.programId,
-      calledAt: q.calledAt,
-    }
-  }));
+  return c.json({
+    success: true, queue: queue.map(async (q) => {
+
+      try {
+        const waitingCount = await db.select({
+          count: count(queues.id)
+        }).from(queues).where(
+          and(
+            eq(queues.programId, q.programId),
+            lt(queues.createdAt, q.createdAt),
+            or(
+              eq(queues.status, "wait"),
+              and(eq(queues.status, "called"),
+                gt(queues.calledAt,
+                  new Date(Date.now() - callWaitingTime),
+                ),
+              )
+            )
+          )
+        );
+
+        return {
+          status: q.status,
+          programId: q.programId,
+          waitedAt: q.createdAt,
+          calledAt: q.calledAt,
+          waitingCount: waitingCount[0].count,
+        }
+      } catch (e) {
+        return {
+          status: q.status,
+          programId: q.programId,
+          waitedAt: q.createdAt,
+          calledAt: q.calledAt,
+          waitingCount: null,
+        }
+      }
+    })
+  });
 
 });
 
@@ -526,9 +569,14 @@ app.post("/staff/quit/:programId",
       return c.json({ success: false, error: "Unauthorized" }, 401);
     }
 
+    const inAt = queueData.inAt;
+    const exitedAt = new Date();
+
+    const stayLength = Math.floor((exitedAt.getTime() - inAt.getTime()) / 1000);
     await db.update(queues).set({
       status: "exited",
-      exitedAt: new Date(),
+      exitedAt,
+      stayLength
     }).where(eq(queues.id, queueData.id));
 
     return c.json({ success: true });

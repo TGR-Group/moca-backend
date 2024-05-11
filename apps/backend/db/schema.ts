@@ -13,6 +13,7 @@ export const queues = pgTable('queues', {
     calledAt: timestamp('called_at'),
     inAt: timestamp('in_at'),
     exitedAt: timestamp('exited_at'),
+    stayLength: integer('stay_length'),
     status: varchar('status', { enum: ["wait", "called", "in", "exited", "canceled"] }).notNull(),
     programId: uuid('program_id').notNull(),
 });
