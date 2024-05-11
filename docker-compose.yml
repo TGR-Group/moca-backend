@@ -1,42 +1,48 @@
 version: "3"
 
+networks:
+  db:
+    internal: true
+
+volumes:
+  moca_db:
+    driver: local
+  moca_modules:
+    driver: local
+
 services:
   db:
     image: postgres:16
-    ports:
-      - "5432:5432"
     environment:
-      POSTGRES_PASSWORD: postgres
-      TZ: UTC
+      - POSTGRES_PASSWORD=postgres
+      - TZ=UTC
     volumes:
-      - pg-data:/var/lib/postgresql/data
+      - moca_db:/var/lib/postgresql/data:rw
     networks:
       - db
+    expose:
+      - 5432:5432
+    tty: true
+    restart: no
   node:
     image: node:20
-    platform: linux/amd64
-    volumes:
-      - ./:/moca
-      - node-modules-node:/moca/node_modules
     environment:
       - DATABASE_URL=postgres://postgres:postgres@db:5432
       - TZ=UTC
-    tty: true
+    volumes:
+      - ./:/moca
+      - moca_modules:/moca/node_modules
     tmpfs: /moca-tmp
+    depends_on:
+      - db
+    networks:
+      - db
     ports:
-      - "8080:8080"
+      - 8080:8080
     command: >
       bash -c "cd /moca &&
       npm install -g pnpm &&
       pnpm i &&
       pnpm run start"
-    depends_on:
-      - db
-    networks:
-      - db
-volumes:
-  pg-data:
-  node-modules-node:
-networks:
-  db:
-    driver: bridge
+    tty: true
+    restart: no
