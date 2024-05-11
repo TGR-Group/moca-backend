@@ -12,6 +12,17 @@ services:
       - pg-data:/var/lib/postgresql/data
     networks:
       - db
+  test-db:
+    image: postgres:16
+    ports:
+      - "5433:5433"
+    environment:
+      POSTGRES_PASSWORD: postgres
+      TZ: UTC
+    volumes:
+      - test-pg-data:/var/lib/postgresql/data
+    networks:
+      - db
   node:
     image: node:20
     platform: linux/amd64
@@ -36,6 +47,7 @@ services:
       - db
 volumes:
   pg-data:
+  test-pg-data:
   node-modules-node:
 networks:
   db:

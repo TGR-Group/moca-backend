@@ -4,7 +4,8 @@
     "drizzle:generate": "drizzle-kit generate:pg --config=drizzle.config.ts",
     "drizzle:push": "drizzle-kit push:pg --config=drizzle.config.ts",
     "drizzle:introspect": "drizzle-kit introspect:pg --config=drizzle.config.ts",
-    "migrate": "pnpm drizzle:generate && pnpm drizzle:push"
+    "migrate": "pnpm drizzle:generate && pnpm drizzle:push",
+    "test": "vitest"
   },
   "dependencies": {
     "@hono/node-server": "^1.11.0",
@@ -18,6 +19,7 @@
     "pg": "^8.11.5",
     "postgres": "^3.4.4",
     "uuid": "^9.0.1",
+    "vitest": "^1.6.0",
     "zod": "^3.22.5"
   },
   "devDependencies": {
