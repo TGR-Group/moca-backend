@@ -92,7 +92,14 @@ app.get('/program/:id', zValidator(
   }).from(queues).where(
     and(
       eq(queues.programId, id),
-      eq(queues.status, "wait"),
+      or(
+        eq(queues.status, "wait"),
+        and(eq(queues.status, "called"),
+          gt(queues.calledAt,
+            new Date(Date.now() - callWaitingTime),
+          ),
+        )
+      )
     )
   );
 
@@ -147,10 +154,10 @@ app.get("/visitor/queue", async (c) => {
   );
 
   return c.json({
-    success: true, queue: queue.map(async (q) => {
-
+    success: true, queue: await Promise.all(queue.map(async (q) => {
+      let waitingCount = null;
       try {
-        const waitingCount = await db.select({
+        const waitingCountList = await db.select({
           count: count(queues.id)
         }).from(queues).where(
           and(
@@ -167,23 +174,18 @@ app.get("/visitor/queue", async (c) => {
           )
         );
 
-        return {
-          status: q.status,
-          programId: q.programId,
-          waitedAt: q.createdAt,
-          calledAt: q.calledAt,
-          waitingCount: waitingCount[0].count,
-        }
-      } catch (e) {
-        return {
-          status: q.status,
-          programId: q.programId,
-          waitedAt: q.createdAt,
-          calledAt: q.calledAt,
-          waitingCount: null,
-        }
+        waitingCount = waitingCountList[0].count;
+
+      } catch (e) { }
+
+      return {
+        status: q.status,
+        programId: q.programId,
+        waitedAt: q.createdAt,
+        calledAt: q.calledAt,
+        waitingCount: waitingCount,
       }
-    })
+    }))
   });
 
 });
@@ -437,16 +439,12 @@ app.post("/staff/call/:programId",
       return c.json({ success: false, error: "Unauthorized" }, 401);
     }
 
-    const queueDataList = await db.select().from(queues).where(and(eq(queues.userId, userId), eq(queues.programId, _programId)));
+    const queueDataList = await db.select().from(queues).where(and(eq(queues.userId, userId), eq(queues.programId, _programId), eq(queues.status, "wait")));
     if (!queueDataList[0]) {
       return c.json({ success: false, error: "Queue not found" }, 404);
     }
 
     const queueData = queueDataList[0];
-
-    if (queueData.status !== "wait") {
-      return c.json({ success: false, error: "Queue is not waiting" }, 400);
-    }
 
     const programId = queueData.programId;
 
@@ -484,15 +482,15 @@ app.post("/staff/enter/:programId", zValidator("param", z.object({
       return c.json({ success: false, error: "Unauthorized" }, 401);
     }
 
-    const queueDataList = await db.select().from(queues).where(and(eq(queues.userId, userId), eq(queues.programId, _programId)));
+    const queueDataList = await db.select().from(queues).where(and(eq(queues.userId, userId), eq(queues.programId, _programId), eq(queues.status, "called"), isNotNull(queues.calledAt)));
     if (!queueDataList[0]) {
       return c.json({ success: false, error: "Queue not found" }, 404);
     }
 
     const queueData = queueDataList[0];
 
-    if (queueData.status !== "called" || !queueData.calledAt) {
-      return c.json({ success: false, error: "Queue is not called" }, 400);
+    if (!queueData.calledAt) {
+      return c.json({ success: false, error: "Not called yet" }, 400);
     }
 
     const programId = queueData.programId;
@@ -538,15 +536,15 @@ app.post("/staff/quit/:programId",
       return c.json({ success: false, error: "Unauthorized" }, 401);
     }
 
-    const queueDataList = await db.select().from(queues).where(and(eq(queues.userId, userId), eq(queues.programId, _programId)));
+    const queueDataList = await db.select().from(queues).where(and(eq(queues.userId, userId), eq(queues.programId, _programId), eq(queues.status, "in"), isNotNull(queues.inAt)));
     if (!queueDataList[0]) {
       return c.json({ success: false, error: "Queue not found" }, 404);
     }
 
     const queueData = queueDataList[0];
 
-    if (queueData.status !== "in" || !queueData.calledAt || !queueData.inAt) {
-      return c.json({ success: false, error: "Queue is not in" }, 400);
+    if (!queueData.inAt) {
+      return c.json({ success: false, error: "Not entered yet" }, 400);
     }
 
     const programId = queueData.programId;
@@ -610,7 +608,7 @@ app.get("/staff/wait/:programId",
         id: v.id,
         userId: v.userId,
         status: v.status,
-        createdAt: v.createdAt,
+        waitedAt: v.createdAt,
       }
     }))
   })
@@ -651,6 +649,7 @@ app.get("/staff/called/:programId",
         id: v.id,
         userId: v.userId,
         status: v.status,
+        waitedAt: v.createdAt,
         calledAt: v.calledAt,
       }
     }));
