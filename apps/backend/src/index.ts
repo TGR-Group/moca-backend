@@ -54,7 +54,8 @@ app.get('/programs', async (c) => {
       summary: _v.summary,
       category: _v.category,
       grade: _v.grade,
-      className: _v.className
+      className: _v.className,
+      waitEnabled: _v.waitEnabled
     }
   }));
 })
