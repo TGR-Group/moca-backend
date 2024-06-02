@@ -8,7 +8,7 @@ networks:
   db:
     internal: true
   app:
-    inetrnal: false
+    internal: false
 
 services:
   db:
