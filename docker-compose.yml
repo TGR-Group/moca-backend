@@ -31,8 +31,6 @@ services:
       - DATABASE_URL=postgres://postgres:postgres@db:5432
       - TZ=UTC
     working_dir: "/moca"
-    volumes:
-      - ./:/moca
     tmpfs: /moca-tmp
     networks:
       - db
