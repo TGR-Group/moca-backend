@@ -1,54 +1,45 @@
 version: "3"
 
+volumes:
+  db:
+    driver: local
+
+networks:
+  db:
+    internal: true
+
 services:
   db:
     image: postgres:16
-    ports:
-      - "5432:5432"
     environment:
-      POSTGRES_PASSWORD: postgres
-      TZ: UTC
-    volumes:
-      - pg-data:/var/lib/postgresql/data
+      - POSTGRES_PASSWORD=postgres
+      - TZ=UTC
     networks:
       - db
-  test-db:
-    image: postgres:16
-    ports:
-      - "5433:5433"
-    environment:
-      POSTGRES_PASSWORD: postgres
-      TZ: UTC
+    expose:
+      - 5432
     volumes:
-      - test-pg-data:/var/lib/postgresql/data
-    networks:
-      - db
-  node:
-    image: node:20
-    platform: linux/amd64
-    volumes:
-      - ./:/moca
-      - node-modules-node:/moca/node_modules
+      - db:/var/lib/postgresql/data
+    tty: true
+    restart: always
+
+  moca:
+    build:
+      context: .
+      dockerfile: Dockerfile
     environment:
       - DATABASE_URL=postgres://postgres:postgres@db:5432
       - TZ=UTC
-    tty: true
+    working_dir: "/moca"
+    volumes:
+      - ./:/moca
     tmpfs: /moca-tmp
-    ports:
-      - "8080:8080"
-    command: >
-      bash -c "cd /moca &&
-      npm install -g pnpm &&
-      pnpm i &&
-      pnpm run start"
-    depends_on:
-      - db
     networks:
       - db
-volumes:
-  pg-data:
-  test-pg-data:
-  node-modules-node:
-networks:
-  db:
-    driver: bridge
+    ports:
+      - 8122:8080
+    depends_on:
+      - db
+    command: "pnpm run start"
+    tty: true
+    restart: always
