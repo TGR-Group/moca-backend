@@ -15,6 +15,7 @@ import { hashPassword, verifyPassword } from '../utils/password';
 import { basicAuth } from 'hono/basic-auth';
 import { getAuthUserId, getStaffUserId } from '../utils/getAuthUserId';
 import { interval } from 'drizzle-orm/pg-core';
+import { cors } from 'hono/cors'
 
 dotenv.config();
 
@@ -25,6 +26,8 @@ const db = drizzle(queryClient);
 
 const idPrefix = "MC";
 const callWaitingTime = 1000 * 60 * 30; // 30分
+
+app.use('*', cors());
 
 // ユーザーが初回アクセス時にトークンを発行する
 app.post('/register', async (c) => {
