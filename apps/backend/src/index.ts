@@ -27,7 +27,10 @@ const db = drizzle(queryClient);
 const idPrefix = "MC";
 const callWaitingTime = 1000 * 60 * 30; // 30分
 
-app.use('*', cors());
+app.use('*', cors([
+  origin: '*',
+  allowMethods: ['POST', 'GET', 'OPTIONS'],
+]));
 
 // ユーザーが初回アクセス時にトークンを発行する
 app.post('/register', async (c) => {
