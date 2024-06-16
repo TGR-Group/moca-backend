@@ -28,7 +28,7 @@ const idPrefix = "MC";
 const callWaitingTime = 1000 * 60 * 30; // 30分
 
 app.use('*', cors({
-  origin: '*',
+  origin: ['127.0.0.1','https://app.project-moca.com'],
   allowMethods: ['POST', 'GET', 'OPTIONS'],
 }));
 
