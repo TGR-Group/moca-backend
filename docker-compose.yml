@@ -5,9 +5,9 @@ volumes:
     driver: local
 
 networks:
-  db:
+  internal_net:
     internal: true
-  app:
+  external_net:
     internal: false
 
 services:
@@ -17,7 +17,7 @@ services:
       - POSTGRES_PASSWORD=postgres
       - TZ=UTC
     networks:
-      - db
+      - internal_net
     expose:
       - 5432
     volumes:
@@ -25,7 +25,7 @@ services:
     tty: true
     restart: always
 
-  moca:
+  backend:
     build:
       context: .
       dockerfile: Dockerfile
@@ -35,12 +35,24 @@ services:
     working_dir: "/moca"
     tmpfs: /moca-tmp
     networks:
-      - db
-      - app
-    ports:
-      - 8122:8080
+      - internal_net
+    expose:
+      - 8080
     depends_on:
       - db
     command: "pnpm run start"
+    tty: true
+    restart: always
+
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    env_file:
+      - config.env
+    environment:
+      - TZ=Asia/Tokyo
+    networks:
+      - internal_net
+      - external_net
+    command: tunnel run
     tty: true
     restart: always
