@@ -3,6 +3,8 @@ version: "3"
 volumes:
   db:
     driver: local
+  moca_node:
+    driver: local
 
 networks:
   internal_net:
@@ -33,6 +35,8 @@ services:
       - DATABASE_URL=postgres://postgres:postgres@db:5432
       - TZ=UTC
     working_dir: "/moca"
+    volumes:
+      - moca_node:/moca/node_modules
     tmpfs: /moca-tmp
     networks:
       - internal_net
