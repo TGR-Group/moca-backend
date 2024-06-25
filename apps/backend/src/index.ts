@@ -16,6 +16,9 @@ import { basicAuth } from 'hono/basic-auth';
 import { getAuthUserId, getStaffUserId } from '../utils/getAuthUserId';
 import { interval } from 'drizzle-orm/pg-core';
 import { cors } from 'hono/cors'
+import { table, time } from 'console';
+import { year } from 'drizzle-orm/mysql-core';
+import { highlight } from 'vitest/utils.js';
 
 dotenv.config();
 
@@ -337,6 +340,32 @@ app.post("/staff/program", zValidator(
     )).nullable(),
     place: z.string(),
     waitEnabled: z.boolean(),
+    timeTable: z.object(
+      {
+        tableName: z.string(),
+        year: z.number(),
+        month: z.number(),
+        day: z.number(),
+        table: z.array(z.object(
+          {
+            content: z.string(),
+            start: z.object(
+              {
+                hour: z.number().optional(),
+                minute: z.number().optional(),
+              }
+            ).default({}),
+            end: z.object(
+              {
+                hour: z.number().optional(),
+                minute: z.number().optional(),
+              }
+            ).default({}),
+          })),
+          highlight: z.boolean().default(false),
+          pageLink: z.string().optional(),
+      }
+    ).nullable(),
   })
 ), async (c) => {
   const staffId = getStaffUserId(c);
@@ -345,7 +374,7 @@ app.post("/staff/program", zValidator(
     return c.json({ success: false, error: "Unauthorized" }, 401);
   }
 
-  const { name, description, summary, category, grade, className, menu, place, waitEnabled } = c.req.valid("json");
+  const { name, description, summary, category, grade, className, menu, place, waitEnabled, timeTable } = c.req.valid("json");
 
   let program;
   try {
@@ -360,6 +389,7 @@ app.post("/staff/program", zValidator(
       menu,
       place,
       waitEnabled,
+      timeTable,
       createdAt: new Date(),
       updatedAt: new Date(),
     }).returning({ id: programs.id });
@@ -418,6 +448,32 @@ app.put("/staff/program/:programId", zValidator(
     )).nullable(),
     place: z.string(),
     waitEnabled: z.boolean(),
+    timeTable: z.object(
+      {
+        tableName: z.string(),
+        year: z.number(),
+        month: z.number(),
+        day: z.number(),
+        table: z.array(z.object(
+          {
+            content: z.string(),
+            start: z.object(
+              {
+                hour: z.number().optional(),
+                minute: z.number().optional(),
+              }
+            ).default({}),
+            end: z.object(
+              {
+                hour: z.number().optional(),
+                minute: z.number().optional(),
+              }
+            ).default({}),
+          })),
+          highlight: z.boolean().default(false),
+          pageLink: z.string().optional(),
+      }
+    ).nullable(),
   })
 ), async (c) => {
   const staffId = getStaffUserId(c);
@@ -427,7 +483,7 @@ app.put("/staff/program/:programId", zValidator(
   }
 
   const { programId } = c.req.valid("param");
-  const { name, description, summary, category, grade, className, menu, place, waitEnabled } = c.req.valid("json");
+  const { name, description, summary, category, grade, className, menu, place, waitEnabled, timeTable } = c.req.valid("json");
 
   try {
     const updateProgramList = await db.update(programs).set({
@@ -441,6 +497,7 @@ app.put("/staff/program/:programId", zValidator(
       menu,
       place,
       waitEnabled,
+      timeTable,
       updatedAt: new Date(),
     }).where(and(eq(programs.id, programId), eq(programs.staffId, staffId))).returning({ id: programs.id });
 

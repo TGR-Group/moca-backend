@@ -30,6 +30,7 @@ export const programs = pgTable('programs', {
     menu: json('menu'),
     staffId: uuid('staff_id').notNull(),
     waitEnabled: boolean('wait_enabled').default(true).notNull(),
+    timeTable: json('time_table'),
     createdAt: timestamp('created_at').notNull(),
     updatedAt: timestamp('updated_at').notNull(),
 });
