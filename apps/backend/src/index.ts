@@ -19,6 +19,7 @@ import { cors } from 'hono/cors'
 import { table, time } from 'console';
 import { year } from 'drizzle-orm/mysql-core';
 import { highlight } from 'vitest/utils.js';
+import { m } from 'vitest/dist/reporters-yx5ZTtEV.js';
 
 dotenv.config();
 
@@ -65,6 +66,7 @@ app.get('/programs', async (c) => {
       category: _v.category,
       grade: _v.grade,
       className: _v.className,
+      place: _v.place,
       waitEnabled: _v.waitEnabled
     }
   }));
@@ -123,7 +125,10 @@ app.get('/program/:id', zValidator(
     category: program.category,
     grade: program.grade,
     className: program.className,
+    menu: program.menu,
+    place: program.place,
     waitEnabled: program.waitEnabled,
+    timeTable: program.timeTable,
     avgStayLength: queueList[0]?.averageDurationSeconds || null,
     waitingCount: waitingCount[0].count,
   });
