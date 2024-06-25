@@ -1,4 +1,4 @@
-import { boolean, integer, pgEnum, pgTable, serial, uniqueIndex, uuid, varchar, timestamp } from 'drizzle-orm/pg-core';
+import { boolean, integer, pgEnum, pgTable, serial, uniqueIndex, uuid, varchar, timestamp, json } from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
     id: serial('id').primaryKey(),
@@ -26,6 +26,8 @@ export const programs = pgTable('programs', {
     category: varchar('category', { enum: ["食販", "飲食店", "体験型", "展示", "イベント", "その他"] }).default("その他").notNull(),
     grade: varchar('grade', { enum: ["1年生", "2年生", "3年生", "部活", "その他"] }).default("その他").notNull(),
     className: varchar('class_name'),
+    place: varchar('place').notNull(),
+    menu: json('menu'),
     staffId: uuid('staff_id').notNull(),
     waitEnabled: boolean('wait_enabled').default(true).notNull(),
     createdAt: timestamp('created_at').notNull(),

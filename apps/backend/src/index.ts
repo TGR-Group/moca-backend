@@ -328,6 +328,14 @@ app.post("/staff/program", zValidator(
     category: z.enum(["食販", "飲食店", "体験型", "展示", "イベント", "その他"]),
     grade: z.enum(["1年生", "2年生", "3年生", "部活", "その他"]),
     className: z.string(),
+    menu: z.array(z.object(
+      {
+        name: z.string(),
+        discription: z.string(),
+        price: z.number(),
+      }
+    )).nullable(),
+    place: z.string(),
     waitEnabled: z.boolean(),
   })
 ), async (c) => {
@@ -337,7 +345,7 @@ app.post("/staff/program", zValidator(
     return c.json({ success: false, error: "Unauthorized" }, 401);
   }
 
-  const { name, description, summary, category, grade, className, waitEnabled } = c.req.valid("json");
+  const { name, description, summary, category, grade, className, menu, place, waitEnabled } = c.req.valid("json");
 
   let program;
   try {
@@ -349,6 +357,8 @@ app.post("/staff/program", zValidator(
       grade,
       className,
       staffId,
+      menu,
+      place,
       waitEnabled,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -398,7 +408,16 @@ app.put("/staff/program/:programId", zValidator(
     summary: z.string(),
     category: z.enum(["食販", "飲食店", "体験型", "展示", "イベント", "その他"]),
     grade: z.enum(["1年生", "2年生", "3年生", "部活", "その他"]),
-    className: z.string()
+    className: z.string(),
+    menu: z.array(z.object(
+      {
+        name: z.string(),
+        discription: z.string(),
+        price: z.number(),
+      }
+    )).nullable(),
+    place: z.string(),
+    waitEnabled: z.boolean(),
   })
 ), async (c) => {
   const staffId = getStaffUserId(c);
@@ -408,7 +427,7 @@ app.put("/staff/program/:programId", zValidator(
   }
 
   const { programId } = c.req.valid("param");
-  const { name, description, summary, category, grade, className } = c.req.valid("json");
+  const { name, description, summary, category, grade, className, menu, place, waitEnabled } = c.req.valid("json");
 
   try {
     const updateProgramList = await db.update(programs).set({
@@ -418,6 +437,10 @@ app.put("/staff/program/:programId", zValidator(
       category,
       grade,
       className,
+      staffId,
+      menu,
+      place,
+      waitEnabled,
       updatedAt: new Date(),
     }).where(and(eq(programs.id, programId), eq(programs.staffId, staffId))).returning({ id: programs.id });
 
