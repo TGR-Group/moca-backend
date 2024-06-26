@@ -339,7 +339,7 @@ app.use("/staff/*",
     verifyUser: async (username, password) => {
       try {
         if (!username || !password) return false;
-        const user = await db.select().from(staff).where(eq(staff.id, username));
+        const user = await db.select().from(staff).where(eq(staff.name, username));
         if (!!user[0]) {
           return await verifyPassword(password, user[0].passwordHash);
         } else {
