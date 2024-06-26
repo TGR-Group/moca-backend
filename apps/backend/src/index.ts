@@ -836,7 +836,7 @@ app.post("/admin/staff/create",
     }))).onConflictDoNothing().returning({ name: staff.name, id: staff.id });
 
     return c.json({
-      success: true, staffList: insertedStaff.map((staff) => ({ id: staff.id, ame: staff.name, password: staffList.find((s) => s.name === staff.name)?.password }))
+      success: true, staffList: insertedStaff.map((staff) => ({ id: staff.id, name: staff.name, password: staffList.find((s) => s.name === staff.name)?.password }))
     });
   });
 
