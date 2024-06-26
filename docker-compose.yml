@@ -33,6 +33,7 @@ services:
       dockerfile: Dockerfile
     environment:
       - DATABASE_URL=postgres://postgres:postgres@db:5432
+      - SUPER_PASSWORD_HASH=$2b$10$ssd9SL2K3y7sn4UCrW3G7.MLs06TtK2/Tv4aUZV.GY62gImGQCcMC
       - TZ=UTC
     working_dir: "/moca"
     volumes:
