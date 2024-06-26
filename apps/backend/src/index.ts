@@ -258,7 +258,54 @@ app.post("/visitor/wait",
       message: "Waiting",
     })
   })
+// ユーザーが出し物に並ぶ
+app.post("/guest/wait",
+  zValidator(
+    "json",
+    z.object({
+      programId: z.string().uuid(),
+      userId: z.number(),
+    })
+  ), async (c) => {
 
+    const { programId, userId } = c.req.valid("json");
+
+    // programIdが存在するか確認
+    const program = await db.select().from(programs).where(and(eq(programs.id, programId), eq(programs.waitEnabled, true)));
+
+    if (!program[0]) {
+      return c.json({ success: false, error: "Program not found" }, 404);
+    }
+
+    // すでに並んでいるか確認 
+    const queue = await db.select().from(queues).where(
+      or(
+        and(eq(queues.userId, userId), eq(queues.status, "wait")),
+        and(eq(queues.userId, userId), eq(queues.status, "called"),
+          gt(queues.calledAt,
+            new Date(Date.now() - callWaitingTime),
+          ),
+        )
+      )
+    );
+
+    if (queue[0]) {
+      return c.json({ success: false, error: "Already waiting" }, 400);
+    }
+
+    // 並ぶ
+    await db.insert(queues).values({
+      userId,
+      status: "wait",
+      createdAt: new Date(),
+      programId,
+    });
+
+    return c.json({
+      success: true,
+      message: "Waiting",
+    })
+  })
 // 出し物の並びをキャンセル
 app.put("/visitor/cancel", zValidator(
   "json",
