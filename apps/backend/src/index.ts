@@ -796,7 +796,7 @@ app.get("/staff/called/:programId",
   })
 
 // スーパーアドミンの認証
-/**app.use(
+app.use(
   '/admin/*',
   bearerAuth({
     verifyToken: async (token, c) => {
@@ -804,7 +804,7 @@ app.get("/staff/called/:programId",
     },
   })
 )
-*/
+
 // スタッフのアカウントの一覧を取得
 app.get("/admin/staff", async (c) => {
   const staffList = await db.select().from(staff);
