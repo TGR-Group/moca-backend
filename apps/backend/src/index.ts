@@ -20,6 +20,8 @@ import { table, time } from 'console';
 import { year } from 'drizzle-orm/mysql-core';
 import { highlight } from 'vitest/utils.js';
 import { m } from 'vitest/dist/reporters-yx5ZTtEV.js';
+import { stockStatus, lostProperty } from '../db/schema';
+
 
 dotenv.config();
 
@@ -380,7 +382,7 @@ app.post("/staff/program", zValidator(
     name: z.string(),
     description: z.string(),
     summary: z.string(),
-    category: z.enum(["食販", "飲食店", "物販", "体験型", "展示", "イベント", "その他"]),
+    category: z.enum(["食販", "飲食店", "体験型", "展示", "イベント", "その他"]),
     grade: z.enum(["1年生", "2年生", "3年生", "部活", "その他"]),
     className: z.string(),
     menu: z.array(z.object(
@@ -488,7 +490,7 @@ app.put("/staff/program/:programId", zValidator(
     name: z.string(),
     description: z.string(),
     summary: z.string(),
-    category: z.enum(["食販", "飲食店", "物販", "体験型", "展示", "イベント", "その他"]),
+    category: z.enum(["食販", "飲食店", "体験型", "展示", "イベント", "その他"]),
     grade: z.enum(["1年生", "2年生", "3年生", "部活", "その他"]),
     className: z.string(),
     menu: z.array(z.object(
@@ -853,7 +855,7 @@ app.delete("/admin/staff/:userId",
     return c.json({ success: true });
   });
 
-// 在庫状況
+// 在庫状況の追加
 app.post('/add_stock', zValidator('json', z.object({
   itemName: z.string(),
   quantity: z.number()
@@ -863,21 +865,27 @@ app.post('/add_stock', zValidator('json', z.object({
   return c.json({ message: 'Stock item added successfully' });
 });
 
-app.get('/get_stock', async (c) => {
-  const stocks = await db.select().from(stockStatus);
-  return c.json(stocks);
+// 在庫状況の取得
+app.get('/get_stock/:id', async (c) => {
+  const { id } = c.req.param();
+  const stock = await db.select().from(stockStatus).where(eq(stockStatus.id, Number(id)));  // idを数値に変換
+  if (stock.length === 0) {
+    return c.json({ message: 'Stock item not found' }, 404);
+  }
+  return c.json(stock[0]);
 });
 
+// 在庫状況の更新
 app.post('/update_stock/:id', zValidator('json', z.object({
   quantity: z.number()
 })), async (c) => {
   const { id } = c.req.param();
   const { quantity } = c.req.valid('json');
-  await db.update(stockStatus).set({ quantity }).where(eq(stockStatus.id, id));
+  await db.update(stockStatus).set({ quantity }).where(eq(stockStatus.id, Number(id)));  // idを数値に変換
   return c.json({ message: 'Stock quantity updated successfully' });
 });
 
-// 落とし物
+// 落とし物の追加
 app.post('/add_lostproperty', zValidator('json', z.object({
   lostproperty_name: z.string()
 })), async (c) => {
@@ -886,17 +894,19 @@ app.post('/add_lostproperty', zValidator('json', z.object({
   return c.json({ message: 'Lost property added successfully' });
 });
 
+// 落とし物の取得
 app.get('/get_lostproperty', async (c) => {
   const properties = await db.select().from(lostProperty);
   return c.json(properties);
 });
 
+// 落とし物の更新
 app.post('/update_lostproperty/:id', zValidator('json', z.object({
   status: z.boolean()
 })), async (c) => {
   const { id } = c.req.param();
   const { status } = c.req.valid('json');
-  await db.update(lostProperty).set({ status }).where(eq(lostProperty.id, id));
+  await db.update(lostProperty).set({ status }).where(eq(lostProperty.id, Number(id)));  // idを数値に変換
   return c.json({ message: 'Lost property status updated successfully' });
 });
 
