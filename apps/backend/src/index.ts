@@ -2,7 +2,7 @@ import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import postgres from 'postgres';
 import { drizzle } from 'drizzle-orm/postgres-js';
-import { users, queues, programs, staff } from '../db/schema';
+import { users, queues, programs, staff , stockStatus , lostProperty } from '../db/schema';
 import { zeroPadding } from '../utils/zeroPadding';
 import { v4 as uuidv4 } from 'uuid';
 import { bearerAuth } from 'hono/bearer-auth';
@@ -20,7 +20,6 @@ import { table, time } from 'console';
 import { year } from 'drizzle-orm/mysql-core';
 import { highlight } from 'vitest/utils.js';
 import { m } from 'vitest/dist/reporters-yx5ZTtEV.js';
-import { stockStatus, lostProperty } from '../db/schema';
 
 
 dotenv.config();
@@ -382,7 +381,7 @@ app.post("/staff/program", zValidator(
     name: z.string(),
     description: z.string(),
     summary: z.string(),
-    category: z.enum(["食販", "飲食店", "物販", "体験型", "展示", "イベント", "その他"]),
+    category: z.enum(["食販", "飲食店", "体験型", "展示", "イベント", "その他"]),
     grade: z.enum(["1年生", "2年生", "3年生", "部活", "その他"]),
     className: z.string(),
     menu: z.array(z.object(
@@ -490,7 +489,7 @@ app.put("/staff/program/:programId", zValidator(
     name: z.string(),
     description: z.string(),
     summary: z.string(),
-    category: z.enum(["食販", "飲食店", "物販", "体験型", "展示", "イベント", "その他"]),
+    category: z.enum(["食販", "飲食店", "体験型", "展示", "イベント", "その他"]),
     grade: z.enum(["1年生", "2年生", "3年生", "部活", "その他"]),
     className: z.string(),
     menu: z.array(z.object(
