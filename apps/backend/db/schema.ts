@@ -23,7 +23,7 @@ export const programs = pgTable('programs', {
     name: varchar('name').notNull(),
     description: varchar('description').notNull(),
     summary: varchar('summary').notNull(),
-    category: varchar('category', { enum: ["食販", "飲食店", "体験型", "展示", "イベント", "その他"] }).default("その他").notNull(),
+    category: varchar('category', { enum: ["食販", "飲食店", "物販", "体験型", "展示", "イベント", "その他"] }).default("その他").notNull(),
     grade: varchar('grade', { enum: ["1年生", "2年生", "3年生", "部活", "その他"] }).default("その他").notNull(),
     className: varchar('class_name'),
     place: varchar('place').notNull(),

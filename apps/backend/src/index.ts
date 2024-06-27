@@ -380,7 +380,7 @@ app.post("/staff/program", zValidator(
     name: z.string(),
     description: z.string(),
     summary: z.string(),
-    category: z.enum(["食販", "飲食店", "体験型", "展示", "イベント", "その他"]),
+    category: z.enum(["食販", "飲食店", "物販", "体験型", "展示", "イベント", "その他"]),
     grade: z.enum(["1年生", "2年生", "3年生", "部活", "その他"]),
     className: z.string(),
     menu: z.array(z.object(
@@ -488,7 +488,7 @@ app.put("/staff/program/:programId", zValidator(
     name: z.string(),
     description: z.string(),
     summary: z.string(),
-    category: z.enum(["食販", "飲食店", "体験型", "展示", "イベント", "その他"]),
+    category: z.enum(["食販", "飲食店", "物販", "体験型", "展示", "イベント", "その他"]),
     grade: z.enum(["1年生", "2年生", "3年生", "部活", "その他"]),
     className: z.string(),
     menu: z.array(z.object(
