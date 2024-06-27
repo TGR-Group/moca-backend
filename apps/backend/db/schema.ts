@@ -41,3 +41,18 @@ export const staff = pgTable('staff', {
     passwordHash: varchar('password_hash').notNull(),
     createdAt: timestamp('created_at').notNull(),
 });
+
+export const stockStatus = pgTable('stock_status', {
+    id: serial('id').primaryKey(),
+    itemName: varchar('item_name', { length: 255 }).notNull(),
+    quantity: integer('quantity').notNull(),
+    lastUpdated: timestamp('last_updated').defaultNow(),
+    updatedBy: uuid('updated_by').references(() => staff.id) 
+});
+
+export const lostProperty = pgTable('lost_property', {
+    id: serial('id').primaryKey(),
+    lostPropertyName: varchar('lostproperty_name', { length: 50 }).notNull(),
+    status: boolean('status').notNull().default(false),
+    foundBy: uuid('found_by').references(() => staff.id)
+});

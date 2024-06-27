@@ -853,6 +853,53 @@ app.delete("/admin/staff/:userId",
     return c.json({ success: true });
   });
 
+// 在庫状況
+app.post('/add_stock', zValidator('json', z.object({
+  itemName: z.string(),
+  quantity: z.number()
+})), async (c) => {
+  const { itemName, quantity } = c.req.valid('json');
+  await db.insert(stockStatus).values({ itemName, quantity });
+  return c.json({ message: 'Stock item added successfully' });
+});
+
+app.get('/get_stock', async (c) => {
+  const stocks = await db.select().from(stockStatus);
+  return c.json(stocks);
+});
+
+app.post('/update_stock/:id', zValidator('json', z.object({
+  quantity: z.number()
+})), async (c) => {
+  const { id } = c.req.param();
+  const { quantity } = c.req.valid('json');
+  await db.update(stockStatus).set({ quantity }).where(eq(stockStatus.id, id));
+  return c.json({ message: 'Stock quantity updated successfully' });
+});
+
+// 落とし物
+app.post('/add_lostproperty', zValidator('json', z.object({
+  lostproperty_name: z.string()
+})), async (c) => {
+  const { lostproperty_name } = c.req.valid('json');
+  await db.insert(lostProperty).values({ lostPropertyName: lostproperty_name });
+  return c.json({ message: 'Lost property added successfully' });
+});
+
+app.get('/get_lostproperty', async (c) => {
+  const properties = await db.select().from(lostProperty);
+  return c.json(properties);
+});
+
+app.post('/update_lostproperty/:id', zValidator('json', z.object({
+  status: z.boolean()
+})), async (c) => {
+  const { id } = c.req.param();
+  const { status } = c.req.valid('json');
+  await db.update(lostProperty).set({ status }).where(eq(lostProperty.id, id));
+  return c.json({ message: 'Lost property status updated successfully' });
+});
+
 const port = 8080
 console.log(`Server is running on port ${port}`)
 
