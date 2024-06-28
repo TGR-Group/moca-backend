@@ -394,7 +394,7 @@ app.post("/staff/program", zValidator(
     menu: z.array(z.object(
       {
         name: z.string(),
-        discription: z.string(),
+        discription: z.string().optional(),
         price: z.number(),
       }
     )).nullable(),
@@ -502,7 +502,7 @@ app.put("/staff/program/:programId", zValidator(
     menu: z.array(z.object(
       {
         name: z.string(),
-        discription: z.string(),
+        discription: z.string().optional(),
         price: z.number(),
       }
     )).nullable(),
