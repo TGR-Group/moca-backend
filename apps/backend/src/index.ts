@@ -59,19 +59,21 @@ app.post('/register', async (c) => {
 // 出し物の一覧を取得する
 app.get('/programs', async (c) => {
   const _programs = await db.select().from(programs);
-  return c.json(_programs.map(_v => {
-    return {
-      id: _v.id,
-      name: _v.name,
-      description: _v.description,
-      summary: _v.summary,
-      category: _v.category,
-      grade: _v.grade,
-      className: _v.className,
-      place: _v.place,
-      waitEnabled: _v.waitEnabled
-    }
-  }));
+  return c.json({
+    success: true,
+    programs:_programs.map(_v => {
+      return {
+        id: _v.id,
+        name: _v.name,
+        description: _v.description,
+        summary: _v.summary,
+        category: _v.category,
+        grade: _v.grade,
+        className: _v.className,
+        place: _v.place,
+        waitEnabled: _v.waitEnabled
+      }
+  })});
 })
 
 // 待ち時間を含めた出し物の詳細を取得する
@@ -363,16 +365,20 @@ app.get("/staff/program", async (c) => {
   }
 
   const programList = await db.select().from(programs).where(eq(programs.staffId, staffId));
-  return c.json(programList.map((program) => ({
-    id: program.id,
-    name: program.name,
-    description: program.description,
-    summary: program.summary,
-    category: program.category,
-    grade: program.grade,
-    className: program.className,
-    waitEnabled: program.waitEnabled,
-  })));
+  return c.json({
+    success: true,
+    programs:programList.map((program) => ({
+      id: program.id,
+      name: program.name,
+      description: program.description,
+      summary: program.summary,
+      category: program.category,
+      grade: program.grade,
+      className: program.className,
+      waitEnabled: program.waitEnabled,
+      place: program.place,
+    }
+  ))});
 })
 
 // プログラムを登録する
