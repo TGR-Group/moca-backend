@@ -874,18 +874,19 @@ app.delete("/admin/staff/:userId",
 
 // 在庫状況の追加
 app.post('/add_stock', zValidator('json', z.object({
+  programId: z.string().uuid(),
   itemName: z.string(),
   quantity: z.number()
 })), async (c) => {
-  const { itemName, quantity } = c.req.valid('json');
-  await db.insert(stockStatus).values({ itemName, quantity });
+  const { programId, itemName, quantity } = c.req.valid('json');
+  await db.insert(stockStatus).values({ programId, itemName, quantity });
   return c.json({ message: 'Stock item added successfully' });
 });
 
 // 在庫状況の取得
-app.get('/get_stock/:id', async (c) => {
-  const { id } = c.req.param();
-  const stock = await db.select().from(stockStatus).where(eq(stockStatus.id, Number(id)));  // idを数値に変換
+app.get('/get_stock/:programId', async (c) => {
+  const { programId } = c.req.param();
+  const stock = await db.select().from(stockStatus).where(eq(stockStatus.programId, programId));  // idを数値に変換
   if (stock.length === 0) {
     return c.json({ message: 'Stock item not found' }, 404);
   }
@@ -893,12 +894,12 @@ app.get('/get_stock/:id', async (c) => {
 });
 
 // 在庫状況の更新
-app.post('/update_stock/:id', zValidator('json', z.object({
+app.post('/update_stock/:programId', zValidator('json', z.object({
   quantity: z.number()
 })), async (c) => {
-  const { id } = c.req.param();
+  const { programId } = c.req.param();
   const { quantity } = c.req.valid('json');
-  await db.update(stockStatus).set({ quantity }).where(eq(stockStatus.id, Number(id)));  // idを数値に変換
+  await db.update(stockStatus).set({ quantity }).where(eq(stockStatus.programId, programId));  // idを数値に変換
   return c.json({ message: 'Stock quantity updated successfully' });
 });
 

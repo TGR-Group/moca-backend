@@ -47,6 +47,7 @@ export const stockStatus = pgTable('stock_status', {
     itemName: varchar('item_name', { length: 255 }).notNull(),
     quantity: integer('quantity').notNull(),
     lastUpdated: timestamp('last_updated').defaultNow(),
+    programId: uuid('program_id').notNull(),
     updatedBy: uuid('updated_by').references(() => staff.id) 
 });
 
