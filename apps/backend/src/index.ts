@@ -394,7 +394,7 @@ app.post("/staff/program", zValidator(
     menu: z.array(z.object(
       {
         name: z.string(),
-        discription: z.string().optional(),
+        description: z.string().optional(),
         price: z.number(),
       }
     )).nullable(),
@@ -439,17 +439,17 @@ app.post("/staff/program", zValidator(
   let program;
   try {
     program = await db.insert(programs).values({
-      name,
-      description,
-      summary,
-      category,
-      grade,
-      className,
-      staffId,
-      menu,
-      place,
-      waitEnabled,
-      timeTable,
+      name:name,
+      description:description,
+      summary:summary,
+      category:category,
+      grade:grade,
+      className:className,
+      staffId:staffId,
+      menu:menu,
+      place:place,
+      waitEnabled:waitEnabled,
+      timeTable:timeTable,
       createdAt: new Date(),
       updatedAt: new Date(),
     }).returning({ id: programs.id });
@@ -502,7 +502,7 @@ app.put("/staff/program/:programId", zValidator(
     menu: z.array(z.object(
       {
         name: z.string(),
-        discription: z.string().optional(),
+        description: z.string().optional(),
         price: z.number(),
       }
     )).nullable(),
@@ -547,17 +547,17 @@ app.put("/staff/program/:programId", zValidator(
 
   try {
     const updateProgramList = await db.update(programs).set({
-      name,
-      description,
-      summary,
-      category,
-      grade,
-      className,
-      staffId,
-      menu,
-      place,
-      waitEnabled,
-      timeTable,
+      name:name,
+      description:description,
+      summary:summary,
+      category:category,
+      grade:grade,
+      className:className,
+      staffId:staffId,
+      menu:menu,
+      place:place,
+      waitEnabled:waitEnabled,
+      timeTable:timeTable,
       updatedAt: new Date(),
     }).where(and(eq(programs.id, programId), eq(programs.staffId, staffId))).returning({ id: programs.id });
 
