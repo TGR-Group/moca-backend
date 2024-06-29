@@ -454,7 +454,7 @@ app.post("/staff/program", zValidator(
       updatedAt: new Date(),
     }).returning({ id: programs.id });
   } catch (e) {
-    return c.json({ success: false, error: "Failed to create" }, 500);
+    return c.json({ success: false, error: e }, 500);
   }
 
   return c.json({ success: true, programId: program[0].id });
