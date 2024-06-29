@@ -861,6 +861,48 @@ app.get("/staff/in/:programId",
     }));
   })
 
+app.get("/staff/exited/:programId",
+  zValidator("param", z.object({
+    programId: z.string().uuid(),
+  })), async (c) => {
+    const programId = c.req.valid("param").programId;
+
+    const staffId = getStaffUserId(c);
+
+    if (!staffId) {
+      return c.json({ success: false, error: "Unauthorized" }, 401);
+    }
+
+    const programList = await db.select().from(programs).where(
+      and(
+        eq(programs.id, programId),
+        eq(programs.staffId, staffId),
+      )
+    );
+
+    if (!programList[0]) {
+      return c.json({ success: false, error: "Program not found" }, 404);
+    }
+
+    const queueList = await db.select().from(queues).where(
+      and(
+        eq(queues.programId, programId),
+        eq(queues.status, "exited"),
+        gt(queues.calledAt, new Date(Date.now() - callWaitingTime)),
+      )
+    );
+
+    return c.json(queueList.map(v => {
+      return {
+        id: v.id,
+        userId: v.userId,
+        status: v.status,
+        waitedAt: v.createdAt,
+        calledAt: v.calledAt,
+      }
+    }));
+  })
+
 // スーパーアドミンの認証
 app.use(
   '/admin/*',
