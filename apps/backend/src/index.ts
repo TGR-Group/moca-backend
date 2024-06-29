@@ -439,17 +439,17 @@ app.post("/staff/program", zValidator(
   let program;
   try {
     program = await db.insert(programs).values({
-      name:name,
-      description:description,
-      summary:summary,
-      category:category,
-      grade:grade,
-      className:className,
-      staffId:staffId,
-      menu:menu,
-      place:place,
-      waitEnabled:waitEnabled,
-      timeTable:timeTable,
+      name,
+      description,
+      summary,
+      category,
+      grade,
+      className,
+      staffId,
+      menu,
+      place,
+      waitEnabled,
+      timeTable,
       createdAt: new Date(),
       updatedAt: new Date(),
     }).returning({ id: programs.id });
@@ -547,17 +547,17 @@ app.put("/staff/program/:programId", zValidator(
 
   try {
     const updateProgramList = await db.update(programs).set({
-      name:name,
-      description:description,
-      summary:summary,
-      category:category,
-      grade:grade,
-      className:className,
-      staffId:staffId,
-      menu:menu,
-      place:place,
-      waitEnabled:waitEnabled,
-      timeTable:timeTable,
+      name,
+      description,
+      summary,
+      category,
+      grade,
+      className,
+      staffId,
+      menu,
+      place,
+      waitEnabled,
+      timeTable,
       updatedAt: new Date(),
     }).where(and(eq(programs.id, programId), eq(programs.staffId, staffId))).returning({ id: programs.id });
 
