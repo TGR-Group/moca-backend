@@ -907,7 +907,7 @@ app.post('/update_stock/:programId',
     programId: z.string().uuid(),
   })),
   zValidator('json', z.object({
-  quantity: z..enum(["普通", "混雑", "満員"]),
+  quantity: z.enum(["普通", "混雑", "満員"]),
 })), async (c) => {
   const { programId } = c.req.valid('param');
   const { quantity } = c.req.valid('json');
