@@ -44,7 +44,7 @@ export const staff = pgTable('staff', {
 
 export const stockStatus = pgTable('stock_status', {
     id: serial('id').primaryKey(),
-    quantity: integer('quantity').notNull(),
+    quantity: varchar('quantity', { enum: ["普通", "混雑", "満員"] }).default("普通").notNull(),,
     lastUpdated: timestamp('last_updated').defaultNow(),
     programId: uuid('program_id').notNull(),
     updatedBy: uuid('updated_by').references(() => staff.id)

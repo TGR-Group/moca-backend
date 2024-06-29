@@ -875,7 +875,7 @@ app.delete("/admin/staff/:userId",
 // 在庫状況の追加
 app.post('/add_stock/:programId',
   zValidator('json', z.object({
-    quantity: z.number()
+    quantity: z.enum(["普通", "混雑", "満員"]),
   })),
   zValidator('param', z.object({
     programId: z.string().uuid(),
@@ -907,7 +907,7 @@ app.post('/update_stock/:programId',
     programId: z.string().uuid(),
   })),
   zValidator('json', z.object({
-  quantity: z.number()
+  quantity: z..enum(["普通", "混雑", "満員"]),
 })), async (c) => {
   const { programId } = c.req.valid('param');
   const { quantity } = c.req.valid('json');
