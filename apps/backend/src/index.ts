@@ -802,7 +802,7 @@ app.get("/staff/called/:programId",
       }
     }));
   })
-
+/**
 // スーパーアドミンの認証
 app.use(
   '/admin/*',
@@ -812,7 +812,7 @@ app.use(
     },
   })
 )
-
+*/
 // スタッフのアカウントの一覧を取得
 app.get("/admin/staff", async (c) => {
   const staffList = await db.select().from(staff);
