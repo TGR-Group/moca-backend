@@ -47,7 +47,7 @@ export const stockStatus = pgTable('stock_status', {
     quantity: integer('quantity').notNull(),
     lastUpdated: timestamp('last_updated').defaultNow(),
     programId: uuid('program_id').notNull(),
-    updatedBy: uuid('updated_by').references(() => staff.id) 
+    updatedBy: uuid('updated_by').references(() => staff.id)
 });
 
 export const lostProperty = pgTable('lost_property', {
