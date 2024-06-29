@@ -367,9 +367,8 @@ app.get("/staff/auth", async (c) => {
   return c.json({
     success: true,
     programIds:programList.map((program) => {
-      id: program.id
-    })
-  }, 200);
+      return {id: program.id}
+  })}, 200);
 
 })
 
