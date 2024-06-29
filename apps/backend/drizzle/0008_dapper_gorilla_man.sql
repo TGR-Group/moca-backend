@@ -1,0 +1,1 @@
+ALTER TABLE "programs" ALTER COLUMN "staff_id" SET DATA TYPE varchar;
