@@ -44,7 +44,6 @@ export const staff = pgTable('staff', {
 
 export const stockStatus = pgTable('stock_status', {
     id: serial('id').primaryKey(),
-    itemName: varchar('item_name', { length: 255 }).notNull(),
     quantity: integer('quantity').notNull(),
     lastUpdated: timestamp('last_updated').defaultNow(),
     programId: uuid('program_id').notNull(),
