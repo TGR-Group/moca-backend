@@ -361,9 +361,15 @@ app.get("/staff/auth", async (c) => {
 
   if (!staffId) {
     return c.json({ success: false, error: "Unauthorized" }, 401);
-  }else{
-    return c.json({ success: true }, 200);
   }
+
+  const programList = await db.select().from(programs).where(eq(programs.staffId, staffId));
+  return c.json({
+    success: true,
+    programIds:programList.map((program) => {
+      id: program.id
+    })
+  }, 200);
 
 })
 
@@ -873,9 +879,9 @@ app.delete("/admin/staff/:userId",
   });
 
 // 在庫状況の追加
-app.post('/add_stock/:programId',
+app.post('/staff/add_stock/:programId',
   zValidator('json', z.object({
-    quantity: z.enum(["普通", "混雑", "満員"]),
+    quantity: z.enum(["普通", "混雑", "満員", "不明"]),
   })),
   zValidator('param', z.object({
     programId: z.string().uuid(),
@@ -902,12 +908,12 @@ app.get('/get_stock/:programId',
 });
 
 // 在庫状況の更新
-app.post('/update_stock/:programId',
+app.post('/staff/update_stock/:programId',
   zValidator('param', z.object({
     programId: z.string().uuid(),
   })),
   zValidator('json', z.object({
-  quantity: z.enum(["普通", "混雑", "満員"]),
+  quantity: z.enum(["普通", "混雑", "満員", "不明"]),
 })), async (c) => {
   const { programId } = c.req.valid('param');
   const { quantity } = c.req.valid('json');
