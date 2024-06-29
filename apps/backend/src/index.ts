@@ -311,7 +311,7 @@ app.post("/guest/wait",
     })
   })
 // 出し物の並びをキャンセル
-app.put("/visitor/cancel", zValidator(
+app.post("/visitor/cancel", zValidator(
   "json",
   z.object({
     programId: z.string().uuid(),
