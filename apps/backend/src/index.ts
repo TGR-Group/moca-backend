@@ -356,6 +356,17 @@ app.use("/staff/*",
   })
 )
 
+app.get("/staff/auth", async (c) => {
+  const staffId = getStaffUserId(c);
+
+  if (!staffId) {
+    return c.json({ success: false, error: "Unauthorized" }, 401);
+  }else{
+    return c.json({ success: true }, 200);
+  }
+
+})
+
 // プログラム一覧を取得する
 app.get("/staff/program", async (c) => {
   const staffId = getStaffUserId(c);
