@@ -749,6 +749,7 @@ app.get("/staff/wait/:programId",
       return c.json({ success: false, error: "Unauthorized" }, 401);
     }
 
+    /**
     const programList = await db.select().from(programs).where(
       and(
         eq(programs.id, programId),
@@ -759,7 +760,7 @@ app.get("/staff/wait/:programId",
     if (!programList[0]) {
       return c.json({ success: false, error: "Program not found" }, 404);
     }
-
+    */
     const queueList = await db.select().from(queues).where(
       and(
         eq(queues.programId, programId),
@@ -789,6 +790,7 @@ app.get("/staff/called/:programId",
       return c.json({ success: false, error: "Unauthorized" }, 401);
     }
 
+    /**
     const programList = await db.select().from(programs).where(
       and(
         eq(programs.id, programId),
@@ -799,6 +801,7 @@ app.get("/staff/called/:programId",
     if (!programList[0]) {
       return c.json({ success: false, error: "Program not found" }, 404);
     }
+      */
 
     const queueList = await db.select().from(queues).where(
       and(
@@ -831,6 +834,7 @@ app.get("/staff/in/:programId",
       return c.json({ success: false, error: "Unauthorized" }, 401);
     }
 
+    /**
     const programList = await db.select().from(programs).where(
       and(
         eq(programs.id, programId),
@@ -841,6 +845,7 @@ app.get("/staff/in/:programId",
     if (!programList[0]) {
       return c.json({ success: false, error: "Program not found" }, 404);
     }
+      */
 
     const queueList = await db.select().from(queues).where(
       and(
@@ -873,6 +878,7 @@ app.get("/staff/exited/:programId",
       return c.json({ success: false, error: "Unauthorized" }, 401);
     }
 
+    /**
     const programList = await db.select().from(programs).where(
       and(
         eq(programs.id, programId),
@@ -883,6 +889,7 @@ app.get("/staff/exited/:programId",
     if (!programList[0]) {
       return c.json({ success: false, error: "Program not found" }, 404);
     }
+      */
 
     const queueList = await db.select().from(queues).where(
       and(
