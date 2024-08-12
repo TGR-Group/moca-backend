@@ -16,7 +16,7 @@ services:
   db:
     image: postgres:16
     environment:
-      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_PASSWORD=
       - TZ=UTC
     networks:
       - internal_net
@@ -33,7 +33,7 @@ services:
       dockerfile: Dockerfile
     environment:
       - DATABASE_URL=postgres://postgres:postgres@db:5432
-      - SUPER_PASSWORD_HASH=$2b$10$GyuVwm4zAMMa/ACg56fOR.AvnjqVUlcVQ6pNFDfWnxNCfUq0WDPN6
+      - SUPER_PASSWORD_HASH=
       - TZ=UTC
     working_dir: "/moca"
     volumes:
